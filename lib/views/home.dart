@@ -9,8 +9,13 @@ import 'package:quiz_game/views/widgets/triangle_cripple.dart';
 class Home extends StatefulWidget {
   final List<QuestionsMap> questions;
   final int numOfLivesLeft;
+  final int stageNumber;
 
-  const Home({Key? key, required this.questions, required this.numOfLivesLeft})
+  const Home(
+      {Key? key,
+      required this.questions,
+      required this.numOfLivesLeft,
+      required this.stageNumber})
       : super(key: key);
 
   @override
@@ -149,14 +154,28 @@ class _HomeState extends State<Home> {
                       // });
                       // answerToArray(
                       //     widget.questions[currentQuestionIndex].answer);
-                      setState(() {
-                        currentQuestionIndex++;
-                        showHint = false; //reset the hint state
-                      });
+                      bool toNextQuestion = ((widget.questions.length - 1) ==
+                              currentQuestionIndex)
+                          ? true
+                          : false; //Is user at the maximum question for that stage
+
+                      (!toNextQuestion)
+                          ? setState(() {
+                              // should user progress?
+                              currentQuestionIndex++;
+                              showHint = false; //reset the hint state
+                            })
+                          : showDialog(
+                              barrierDismissible: false,
+                              context: context,
+                              builder: (_) {
+                                return nextStageDialog();
+                              });
                       resetGame();
                     } else {
                       setState(() {
                         currentLivesLeft--;
+                        this.showHint = false;
                       });
 
                       // if lives left is 0, show the alertdialog without the option to tryagain
@@ -182,18 +201,30 @@ class _HomeState extends State<Home> {
                     if (playerAnswer ==
                         widget.questions[currentQuestionIndex].answer) {
                       // print ("Answer is true");
-                      setState(() {
-                        currentQuestionIndex++;
-                        playerAnswer = ""; //reset the players answer
-                        guessesArray = []; //reset the guesses
-                        a = []; //empty array a first
-                        solution = []; //empty the solutions array
-                      });
+                      bool toNextQuestion = ((widget.questions.length - 1) ==
+                              currentQuestionIndex)
+                          ? true
+                          : false; //Is user at the maximum question for that stage
+
+                      (!toNextQuestion)
+                          ? setState(() {
+                              currentQuestionIndex++;
+                              playerAnswer = ""; //reset the players answer
+                              guessesArray = []; //reset the guesses
+                              a = []; //empty array a first
+                              solution = []; //empty the solutions array
+                            })
+                          : showDialog(
+                              context: context,
+                              builder: (_) {
+                                return nextStageDialog();
+                              });
                       answerToArray(widget.questions[currentQuestionIndex]
                           .answer); //to recreate the options box with the new answer
                     } else {
                       setState(() {
                         currentLivesLeft--;
+                        showHint = false; //reset the hint state
                       });
 
                       // if lives left is 0, show the alertdialog without the option to tryagain
@@ -292,6 +323,10 @@ class _HomeState extends State<Home> {
                       //option to try again with reduced life
                       onPressed: () {
                         resetGame();
+                        setState(() {
+                          this.showHint =
+                              false; //reset the show hint option to be false;
+                        });
                         Navigator.of(context).pop();
                       },
                       child: Row(
@@ -305,6 +340,107 @@ class _HomeState extends State<Home> {
                         adDialog(context, 2, false);
                       },
                       child: Text("Hint"))
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget nextStageDialog() {
+    return Container(
+      //     height: 50,
+      // width: 50,
+      child: AlertDialog(
+        insetPadding: EdgeInsets.all(0),
+        backgroundColor: Color(0xFF255958),
+        actionsPadding: EdgeInsets.all(0),
+        actionsOverflowButtonSpacing: 0,
+
+        // backgroundColor: Colors.transparent,
+        // actions: [
+        //   IconButton(
+        //     padding: EdgeInsets.all(0),
+        //     onPressed: () {},
+        //     icon: Icon(
+        //       Icons.cancel,
+        //       color: Colors.red,
+        //     ),
+        //   )
+        // ],
+        content: Container(
+          height: 300,
+          // width: 400,
+          child: Column(
+            children: [
+              Container(
+                  width: 150,
+                  height: 150,
+                  child: Image.asset("lib/images/champ_cup.gif")),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+
+                  Padding(padding: EdgeInsets.only(right: 10)),
+                  Text("Hurray Champ, Stage ${widget.stageNumber} cleared",style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),),
+                ],
+              ),
+              Padding(padding: EdgeInsets.only(bottom: 10)),
+
+              // Padding(padding: EdgeInsets.only(bottom: 10)),
+              Row(
+                // mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                        //option to try again with reduced life
+                        onPressed: () {
+                          resetGame();
+                          setState(() {
+                            this.showHint =
+                                false; //reset the show hint option to be false;
+                            this.currentQuestionIndex = 0;
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(Icons.repeat),
+                            Text("Play Again?"),
+                          ],
+                        )),
+                  ),
+                  Padding(padding: EdgeInsets.only(right: 10),),
+                  Expanded(
+                    child: ElevatedButton(
+                        onPressed: () {
+                          adDialog(context, 1, false);
+                        },
+                        child: Text("Next Stage")),
+                  )
+                ],
+              ),
+              Padding(padding: EdgeInsets.only(bottom: 20)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("To next Stage?",style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),),
+                  Padding(padding: EdgeInsets.only(right: 20)),
+                  Container(
+                      width: 50,
+                      height: 50,
+                      child: Image.asset("lib/images/mickey_mouse_disney_hats_off.gif"))
+
                 ],
               )
             ],
@@ -759,7 +895,15 @@ class _HomeState extends State<Home> {
                         // ClipRRect(
                         //
                         // )
-                        ElevatedButton(onPressed: () {}, child: Text("Reset")),
+                        ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                showHint = false;
+                                hintArray = [];
+                              });
+                              resetGame();
+                            },
+                            child: Text("Clear")),
                         ElevatedButton(
                             onPressed: () {
                               adDialog(context, 1, true);

@@ -27,7 +27,7 @@ class _SelectStageState extends State<SelectStage> {
                 GestureDetector(
                   onTap: () async { 
                     List<QuestionsMap> questions = await DatabaseAccess.stage1questions();
-                    Navigator.of(context).push(createRoute(Home(questions: questions,numOfLivesLeft: 5,)));
+                    Navigator.of(context).push(createRoute(Home(questions: questions,numOfLivesLeft: 5,stageNumber: 1,)));
                   
                   
                   
