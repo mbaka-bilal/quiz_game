@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:quiz_game/controllers/questions_map.dart';
 import 'dart:math';
 
@@ -10,12 +11,14 @@ class Home extends StatefulWidget {
   final List<QuestionsMap> questions;
   final int numOfLivesLeft;
   final int stageNumber;
+  final String stageName;
 
   const Home(
       {Key? key,
       required this.questions,
       required this.numOfLivesLeft,
-      required this.stageNumber})
+      required this.stageNumber,
+      required this.stageName, })
       : super(key: key);
 
   @override
@@ -317,7 +320,7 @@ class _HomeState extends State<Home> {
               // Padding(padding: EdgeInsets.only(bottom: 10)),
               Row(
                 // mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
                       //option to try again with reduced life
@@ -335,11 +338,11 @@ class _HomeState extends State<Home> {
                           Text("Try Again"),
                         ],
                       )),
-                  ElevatedButton(
-                      onPressed: () {
-                        adDialog(context, 2, false);
-                      },
-                      child: Text("Hint"))
+                  // ElevatedButton(
+                  //     onPressed: () {
+                  //       adDialog(context, 2, false);
+                  //     },
+                  //     child: Text("Hint"))
                 ],
               )
             ],
@@ -402,18 +405,23 @@ class _HomeState extends State<Home> {
                     child: ElevatedButton(
                         //option to try again with reduced life
                         onPressed: () {
-                          resetGame();
+
                           setState(() {
                             this.showHint =
                                 false; //reset the show hint option to be false;
+                            guessesArray = [];
+                            answerArrayCopy = [];
+                            answerArray = [];
                             this.currentQuestionIndex = 0;
+
                           });
+                          resetGame();
                           Navigator.of(context).pop();
                         },
                         child: Row(
                           children: [
                             Icon(Icons.repeat),
-                            Text("Play Again?"),
+                            Text("Replay?"),
                           ],
                         )),
                   ),
@@ -421,9 +429,14 @@ class _HomeState extends State<Home> {
                   Expanded(
                     child: ElevatedButton(
                         onPressed: () {
-                          adDialog(context, 1, false);
+                          // adDialog(context, 1, false);
+                          int count = 0;
+                          Navigator.popUntil(context, (route) {
+                            // remove the two top most pages from the stack
+                            return count++ == 2;
+                          });
                         },
-                        child: Text("Next Stage")),
+                        child: Text("Next Stage?")),
                   )
                 ],
               ),
@@ -574,20 +587,49 @@ class _HomeState extends State<Home> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                      child: Stack(
+                        // mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          GestureDetector(
-                            onTap: () {},
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                    image:
-                                        AssetImage('lib/images/male_user.png')),
-                                borderRadius: BorderRadius.circular(100),
-                                // color: Colors.red,
+                          Center(
+                            child:
+                            Padding(
+                              padding: const EdgeInsets.only(top: 15.0),
+                              child: Text.rich(
+
+                              TextSpan(
+                                style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                      ),
+                                children: [
+                                  TextSpan(
+                                    text: "STAGE  "
+                                  ),
+                                  TextSpan(
+                                    text: "${widget.stageNumber}",
+                                    style: TextStyle(
+                                      color: Colors.red
+                                    )
+                                  )
+                                ]
+                              )
+                          ),
+                            )),
+
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () {},
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image:
+                                          AssetImage('lib/images/male_user.png')),
+                                  borderRadius: BorderRadius.circular(100),
+                                  // color: Colors.red,
+                                ),
                               ),
                             ),
                           ),
@@ -614,6 +656,7 @@ class _HomeState extends State<Home> {
                         ],
                       ),
                     ),
+
                     Text(
                       "Question ${currentQuestionIndex + 1}",
                       style: TextStyle(
