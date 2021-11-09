@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:quiz_game/controllers/db.dart';
 import 'package:quiz_game/controllers/questions_map.dart';
@@ -25,14 +27,20 @@ class _SelectStageState extends State<SelectStage> {
   @override
   void initState() {
     // TODO: implement initState
+
     super.initState();
     setStagesInformation();
+
   }
 
-  void setStagesInformation() async {
+  Future<void> setStagesInformation() async {
     this.listOfStag = [];
     // print (listOfStag);
-    this.listOfStag  = await DatabaseAccess.theStages();
+    List<StagesMap> temp = await DatabaseAccess.theStages();
+    setState(()  { // if this crashes my app, change the build to a Futurebuilder
+      this.listOfStag  = temp;
+    });
+    // Timer(Duration(seconds: 15), () {});
   }
 
   adDialog(BuildContext context,int index) {
@@ -63,10 +71,9 @@ class _SelectStageState extends State<SelectStage> {
 
   @override
   Widget build(BuildContext context) {
-    setStagesInformation();
-
-    print ("in build ${this.listOfStag[0].locked}");
-
+    // setStagesInformation();
+    //
+    // print ("in build ${this.listOfStag[0].locked}");
     // print ("$test");
 
 
@@ -111,7 +118,7 @@ class _SelectStageState extends State<SelectStage> {
                           children: [
                             Text("Stage 1"),
                             Padding(padding: EdgeInsets.only(bottom: 10)),
-                            // (listOfStag[0].locked == 0) ? Icon(Icons.lock_open) : Icon(Icons.lock)
+                            (listOfStag[0].locked == 0) ? Icon(Icons.lock_open) : Icon(Icons.lock)
                           ],
                         ),
                       ),
@@ -150,7 +157,7 @@ class _SelectStageState extends State<SelectStage> {
                           children: [
                             Text("Stage 2"),
                             Padding(padding: EdgeInsets.only(bottom: 10)),
-                            // Icon((listOfStag[1].locked == 0) ?  Icons.lock_open : Icons.lock)
+                            Icon((listOfStag[1].locked == 0) ?  Icons.lock_open : Icons.lock)
                           ],
                         ),
                       ),
