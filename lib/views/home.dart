@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:quiz_game/controllers/db.dart';
 import 'package:quiz_game/controllers/questions_map.dart';
+import 'package:quiz_game/controllers/useful_functions.dart';
+import 'package:quiz_game/views/select_stage.dart';
 import 'dart:math';
 
 import 'package:quiz_game/views/widgets/triangle_cripple.dart';
@@ -12,14 +15,18 @@ class Home extends StatefulWidget {
   final int numOfLivesLeft;
   final int stageNumber;
   final String stageName;
+  final int userId;
+  final int usersIndex;
 
-  const Home(
-      {Key? key,
-      required this.questions,
-      required this.numOfLivesLeft,
-      required this.stageNumber,
-      required this.stageName, })
-      : super(key: key);
+  const Home({
+    Key? key,
+    required this.questions,
+    required this.numOfLivesLeft,
+    required this.stageNumber,
+    required this.stageName,
+    required this.userId,
+    required this.usersIndex,
+  }) : super(key: key);
 
   @override
   _HomeState createState() => _HomeState();
@@ -148,15 +155,6 @@ class _HomeState extends State<Home> {
 
                     if (solution.join("") ==
                         widget.questions[currentQuestionIndex].answer) {
-                      // setState(() {
-                      //   currentQuestionIndex++;
-                      //   playerAnswer = ""; //reset the players answer
-                      //   guessesArray = []; //reset the guesses
-                      //   a = []; //empty array a first
-                      //   solution = []; //empty the solutions array
-                      // });
-                      // answerToArray(
-                      //     widget.questions[currentQuestionIndex].answer);
                       bool toNextQuestion = ((widget.questions.length - 1) ==
                               currentQuestionIndex)
                           ? true
@@ -165,6 +163,11 @@ class _HomeState extends State<Home> {
                       (!toNextQuestion)
                           ? setState(() {
                               // should user progress?
+                              DatabaseAccess.updateTable(
+                                  // change the state of the current question to answered
+                                  "stage${widget.stageNumber}",
+                                  {"solved": 0},
+                                  widget.questions[currentQuestionIndex].id);
                               currentQuestionIndex++;
                               showHint = false; //reset the hint state
                             })
@@ -172,15 +175,42 @@ class _HomeState extends State<Home> {
                               barrierDismissible: false,
                               context: context,
                               builder: (_) {
+                                /* update the stage status because the user has answered all questions correctly */
+                                // we assume that the for the user to reach this point the user must have
+                                // answered all the questions correctly
+                                DatabaseAccess.updateTable("stages",
+                                    {"done": 0}, widget.stageNumber - 1);
+
+                                // Give user 2 extra lives for passing a stage
+                                if (this.currentLivesLeft < 4) {
+                                  DatabaseAccess.updateTable(
+                                      "users",
+                                      {"life": (this.currentLivesLeft + 2)},
+                                      widget.userId);
+
+                                  this.currentLivesLeft + 2;
+
+                                } else if (this.currentLivesLeft == 4) {
+                                  DatabaseAccess.updateTable(
+                                      "users",
+                                      {"life": (this.currentLivesLeft + 1)},
+                                      widget.userId);
+
+                                  this.currentLivesLeft++;
+
+                                }
+
                                 return nextStageDialog();
                               });
                       resetGame();
                     } else {
+                      DatabaseAccess.updateTable("users",
+                          {"life": (currentLivesLeft - 1)}, widget.userId);
+
                       setState(() {
                         currentLivesLeft--;
                         this.showHint = false;
                       });
-
                       // if lives left is 0, show the alertdialog without the option to tryagain
                       // else show the alert dialog with option to try again
                       (currentLivesLeft == 0)
@@ -196,6 +226,7 @@ class _HomeState extends State<Home> {
                     }
                   }
 
+                  /* This one is for an answer without a hint */
                   if (playerAnswer.length ==
                       widget.questions[currentQuestionIndex].answer.length) {
                     // checks to see if the answers are the same length
@@ -203,7 +234,6 @@ class _HomeState extends State<Home> {
 
                     if (playerAnswer ==
                         widget.questions[currentQuestionIndex].answer) {
-                      // print ("Answer is true");
                       bool toNextQuestion = ((widget.questions.length - 1) ==
                               currentQuestionIndex)
                           ? true
@@ -211,6 +241,14 @@ class _HomeState extends State<Home> {
 
                       (!toNextQuestion)
                           ? setState(() {
+                              /* Logic if the user gets this question move on to the next one */
+
+                              DatabaseAccess.updateTable(
+                                  // change the state of the current question to answered
+                                  "stage${widget.stageNumber}",
+                                  {"solved": 0},
+                                  widget.questions[currentQuestionIndex].id);
+
                               currentQuestionIndex++;
                               playerAnswer = ""; //reset the players answer
                               guessesArray = []; //reset the guesses
@@ -220,13 +258,42 @@ class _HomeState extends State<Home> {
                           : showDialog(
                               context: context,
                               builder: (_) {
+                                /* update the stage status because the user has answered all questions correctly */
+                                // we assume that the for the user to reach this point the user must have
+                                // answered all the questions correctly
+                                DatabaseAccess.updateTable("stages",
+                                    {"done": 0}, widget.stageNumber - 1);
+
+                                // Give user 2 extra lives for passing a stage
+                                if (this.currentLivesLeft < 4) {
+                                  DatabaseAccess.updateTable(
+                                      "users",
+                                      {"life": (this.currentLivesLeft + 2)},
+                                      widget.userId);
+
+                                    this.currentLivesLeft + 2;
+
+                                } else if (this.currentLivesLeft == 4) {
+                                  DatabaseAccess.updateTable(
+                                      "users",
+                                      {"life": (this.currentLivesLeft + 1)},
+                                      widget.userId);
+
+                                    this.currentLivesLeft++;
+
+                                }
+
                                 return nextStageDialog();
                               });
                       answerToArray(widget.questions[currentQuestionIndex]
                           .answer); //to recreate the options box with the new answer
                     } else {
+                      DatabaseAccess.updateTable("users",
+                          {"life": (currentLivesLeft - 1)}, widget.userId);
+                      //user failed the question
                       setState(() {
                         currentLivesLeft--;
+
                         showHint = false; //reset the hint state
                       });
 
@@ -374,7 +441,7 @@ class _HomeState extends State<Home> {
         //   )
         // ],
         content: Container(
-          height: 300,
+          height: 350,
           // width: 400,
           child: Column(
             children: [
@@ -386,74 +453,99 @@ class _HomeState extends State<Home> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
                   Padding(padding: EdgeInsets.only(right: 10)),
-                  Text("Hurray Champ, Stage ${widget.stageNumber} cleared",style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),),
+                  Text(
+                    "Hurray Champ, Stage ${widget.stageNumber} cleared",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               Padding(padding: EdgeInsets.only(bottom: 10)),
 
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("+2  ",style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    )),
+                    Icon(Icons.favorite,color: Colors.red,),
+                  ],
+                ),
+              ),
+
+              Padding(padding: EdgeInsets.only(bottom: 10)),
+
+
               // Padding(padding: EdgeInsets.only(bottom: 10)),
-              Row(
-                // mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                        //option to try again with reduced life
-                        onPressed: () {
-
-                          setState(() {
-                            this.showHint =
-                                false; //reset the show hint option to be false;
-                            guessesArray = [];
-                            answerArrayCopy = [];
-                            answerArray = [];
-                            this.currentQuestionIndex = 0;
-
-                          });
-                          resetGame();
-                          Navigator.of(context).pop();
-                        },
-                        child: Row(
-                          children: [
-                            Icon(Icons.repeat),
-                            Text("Replay?"),
-                          ],
-                        )),
-                  ),
-                  Padding(padding: EdgeInsets.only(right: 10),),
-                  Expanded(
-                    child: ElevatedButton(
-                        onPressed: () {
-                          // adDialog(context, 1, false);
-                          int count = 0;
-                          Navigator.popUntil(context, (route) {
-                            // remove the two top most pages from the stack
-                            return count++ == 2;
-                          });
-                        },
-                        child: Text("Next Stage?")),
-                  )
-                ],
+              Expanded(
+                child: Row(
+                  // mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                          //option to try again with reduced life
+                          onPressed: () {
+                            setState(() {
+                              this.showHint =
+                                  false; //reset the show hint option to be false;
+                              guessesArray = [];
+                              answerArrayCopy = [];
+                              answerArray = [];
+                              this.currentQuestionIndex = 0;
+                            });
+                            resetGame();
+                            Navigator.of(context).pop();
+                          },
+                          child: Row(
+                            children: [
+                              Icon(Icons.repeat),
+                              Text("Replay?"),
+                            ],
+                          )),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(right: 10),
+                    ),
+                    Expanded(
+                      child: ElevatedButton(
+                          onPressed: () {
+                            // adDialog(context, 1, false);
+                            // int count = 0;
+                            // Navigator.popUntil(context, (route) {
+                            //   // remove the two top most pages from the stack
+                            //   return count++ == 2;
+                            // });
+                            Navigator.of(context)
+                                .pushReplacement(createRoute(SelectStage()));
+                          },
+                          child: Text("Next Stage?")),
+                    )
+                  ],
+                ),
               ),
               Padding(padding: EdgeInsets.only(bottom: 20)),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("To next Stage?",style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontStyle: FontStyle.italic,
-                  ),),
+                  Text(
+                    "To next Stage?",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                   Padding(padding: EdgeInsets.only(right: 20)),
                   Container(
                       width: 50,
                       height: 50,
-                      child: Image.asset("lib/images/mickey_mouse_disney_hats_off.gif"))
-
+                      child: Image.asset(
+                          "lib/images/mickey_mouse_disney_hats_off.gif"))
                 ],
               )
             ],
@@ -478,6 +570,9 @@ class _HomeState extends State<Home> {
                     onPressed: () {
                       setState(() {
                         //give a user one life for the video watched or add clicked
+
+                        DatabaseAccess.updateTable("users",
+                            {"life": (currentLivesLeft + 1)}, widget.userId);
                         if (!isHint) {
                           //if it is not a hint, it means the user want more life,
                           // when user has watched video or ad has shown
@@ -569,6 +664,7 @@ class _HomeState extends State<Home> {
     super.initState();
     answerToArray(widget.questions[0].answer);
     currentLivesLeft = widget.numOfLivesLeft;
+    currentQuestionIndex = widget.usersIndex; //set the index the user was at so the user can continue
   }
 
   @override
@@ -579,390 +675,440 @@ class _HomeState extends State<Home> {
 
     return (widget.numOfLivesLeft == 0)
         ? (lifeFinished(context))
-        : SafeArea(
-            child: Scaffold(
-              body: Container(
+        : WillPopScope(
+      onWillPop: () async {
+
+
+        showDialog(
+
+          barrierColor: Colors.transparent,
+
+          context: context,
+          builder: (_) {
+            return AlertDialog(
+              // actionsPadding: EdgeInsets.all(0),
+              // actionsOverflowButtonSpacing: 0,
+              contentPadding: EdgeInsets.all(0),
+              content: Container(
                 color: Color(0xFF255958),
+                height: 200,
+                // margin: EdgeInsets.all(0),
+                // padding: EdgeInsets.all(0),
                 child: Column(
+
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Stack(
-                        // mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Center(
-                            child:
-                            Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: Text.rich(
-
-                              TextSpan(
-                                style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                        fontSize: 32,
-                      ),
-                                children: [
-                                  TextSpan(
-                                    text: "STAGE  "
-                                  ),
-                                  TextSpan(
-                                    text: "${widget.stageNumber}",
-                                    style: TextStyle(
-                                      color: Colors.red
-                                    )
-                                  )
-                                ]
-                              )
-                          ),
-                            )),
-
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () {},
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  image: DecorationImage(
-                                      image:
-                                          AssetImage('lib/images/male_user.png')),
-                                  borderRadius: BorderRadius.circular(100),
-                                  // color: Colors.red,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                    Container(
+                      width: 100,
+                      height: 100,
+                      child: Image.asset(
+                          "lib/images/sad_cat.gif"
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 20.0, right: 10),
+
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.favorite,
-                            color: Colors.red,
+                          ElevatedButton(
+                            onPressed: () {
+                              //the user chooses to quit the game, take the user back to the select stage page
+                              Navigator.of(context).pushReplacement(createRoute(SelectStage()));
+                            },
+                            child: Text("Quit"),
                           ),
-                          Padding(padding: EdgeInsets.all(5)),
-                          Text(
-                            "${currentLivesLeft}",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
+                          ElevatedButton(onPressed: () {
+                            //The user chooses not to quit the game
+                            Navigator.of(context).pop();
+                          }, child: Text("Cancel"))
+
                         ],
                       ),
                     ),
-
-                    Text(
-                      "Question ${currentQuestionIndex + 1}",
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 30,
-                      ),
-                    ),
-                    Padding(padding: EdgeInsets.only(bottom: 10)),
-                    Text(
-                      widget.questions[currentQuestionIndex].question,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                    Padding(
-                        padding: EdgeInsets.only(
-                      bottom: 25,
-                    )),
-                    Expanded(
-                      child: ListView.separated(
-                          itemBuilder: (context, index) {
-                            // print("The current index is $index");
-                            List<String> guesses = [];
-
-                            for (int i = 0; i <= 3; i++) {
-                              if (this.answerArrayCopy.length == 1) {
-                                /* once the loop is equal to 1, then assign it
-                        like that because no ranging
-                      */
-
-                                guesses.add(this.answerArrayCopy[0]);
-                                this.answerArrayCopy.removeAt(0);
-                                // print ("length ${this.answerArrayCopy.length}");
-                              } else if (this.answerArrayCopy.length > 0) {
-                                /*
-                        Loop through the answersCopy if the length
-                        is greater than 0 add it to the array
-                      */
-
-                                int arrayIndex = rng
-                                    .nextInt(this.answerArrayCopy.length - 1);
-                                guesses.add(this.answerArrayCopy[arrayIndex]);
-
-                                this.answerArrayCopy.removeAt(arrayIndex);
-                              } else {
-                                guesses.add(this.alphabets[
-                                    rng.nextInt(this.alphabets.length - 1)]);
-                              }
-                            }
-
-                            //add the guesses to the global array containing all guesses
-                            guessesArray.add(guesses);
-
-                            // print(
-                            //     "the size of the guessarray is $guessesArray");
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Draggable(
-                                  onDragCompleted: () {
-                                    setState(() {
-                                      // print ("editing guesses!!");
-                                      guessesArray[index][0] = "";
-                                    });
-                                  },
-                                  data: guessesArray[index][0],
-                                  feedback: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][0])),
-                                  ),
-                                  childWhenDragging: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                  ),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][0])),
-                                  ),
-                                ),
-                                Draggable(
-                                  onDragCompleted: () {
-                                    setState(() {
-                                      guessesArray[index][1] = "";
-                                    });
-                                  },
-                                  data: guessesArray[index][1],
-                                  feedback: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][1])),
-                                  ),
-                                  childWhenDragging: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                  ),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][1])),
-                                  ),
-                                ),
-                                Draggable(
-                                  onDragCompleted: () {
-                                    setState(() {
-                                      guessesArray[index][2] = "";
-                                    });
-                                  },
-                                  data: guessesArray[index][2],
-                                  feedback: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][2])),
-                                  ),
-                                  childWhenDragging: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                  ),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][2])),
-                                  ),
-                                ),
-                                Draggable(
-                                  onDragCompleted: () {
-                                    setState(() {
-                                      guessesArray[index][3] = "";
-                                    });
-                                  },
-                                  data: guessesArray[index][3],
-                                  feedback: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][3])),
-                                  ),
-                                  childWhenDragging: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                  ),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                        // color: Colors.blue,
-                                        image: DecorationImage(
-                                          image: AssetImage(
-                                              'lib/images/background_image.png'),
-                                        ),
-                                        border:
-                                            Border.all(color: Colors.black)),
-                                    child: Center(
-                                        child: Text(guessesArray[index][3])),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                          separatorBuilder: (context, index) {
-                            return Padding(
-                                padding: EdgeInsets.only(bottom: 10));
-                          },
-                          itemCount: 2),
-                    ),
-                    Expanded(
-                        child: GridView.count(
-                      padding: EdgeInsets.all(10),
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      crossAxisCount: 5,
-                      children: this.a,
-                    )),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // ClipPath(
-                        //   clipper: TriangleClipper(),
-                        //   child: ElevatedButton(onPressed: () {}, child: Text("Hint")),
-                        // )
-
-                        // ClipRRect(
-                        //
-                        // )
-                        ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                showHint = false;
-                                hintArray = [];
-                              });
-                              resetGame();
-                            },
-                            child: Text("Clear")),
-                        ElevatedButton(
-                            onPressed: () {
-                              adDialog(context, 1, true);
-                              resetGame();
-                              setState(() {
-                                showHint = true;
-                              });
-                            },
-                            child: Text("Hint")),
-                        //To be clipped for a nice ui
-                      ],
-                    )
                   ],
                 ),
               ),
+            );
+          },
+        );
+
+        return false;
+
+
+      },
+          child: SafeArea(
+              child: Scaffold(
+                body: Container(
+                  color: Color(0xFF255958),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Stack(
+                          // mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Center(
+                                child: Padding(
+                              padding: const EdgeInsets.only(top: 15.0),
+                              child: Text.rich(TextSpan(
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 32,
+                                  ),
+                                  children: [
+                                    TextSpan(text: "STAGE  "),
+                                    TextSpan(
+                                        text: "${widget.stageNumber}",
+                                        style: TextStyle(color: Colors.red))
+                                  ])),
+                            )),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: GestureDetector(
+                                onTap: () {},
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                        image: AssetImage(
+                                            'lib/images/male_user.png')),
+                                    borderRadius: BorderRadius.circular(100),
+                                    // color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 20.0, right: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                            ),
+                            Padding(padding: EdgeInsets.all(5)),
+                            Text(
+                              "${currentLivesLeft}",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                      Text(
+                        "Question ${currentQuestionIndex + 1}",
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 30,
+                        ),
+                      ),
+                      Padding(padding: EdgeInsets.only(bottom: 10)),
+                      Text(
+                        widget.questions[currentQuestionIndex].question,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      Padding(
+                          padding: EdgeInsets.only(
+                        bottom: 25,
+                      )),
+                      Expanded(
+                        child: ListView.separated(
+                            itemBuilder: (context, index) {
+                              // print("The current index is $index");
+                              List<String> guesses = [];
+
+                              for (int i = 0; i <= 3; i++) {
+                                if (this.answerArrayCopy.length == 1) {
+                                  /* once the loop is equal to 1, then assign it
+                          like that because no ranging
+                        */
+
+                                  guesses.add(this.answerArrayCopy[0]);
+                                  this.answerArrayCopy.removeAt(0);
+                                  // print ("length ${this.answerArrayCopy.length}");
+                                } else if (this.answerArrayCopy.length > 0) {
+                                  /*
+                          Loop through the answersCopy if the length
+                          is greater than 0 add it to the array
+                        */
+
+                                  int arrayIndex = rng
+                                      .nextInt(this.answerArrayCopy.length - 1);
+                                  guesses.add(this.answerArrayCopy[arrayIndex]);
+
+                                  this.answerArrayCopy.removeAt(arrayIndex);
+                                } else {
+                                  guesses.add(this.alphabets[
+                                      rng.nextInt(this.alphabets.length - 1)]);
+                                }
+                              }
+
+                              //add the guesses to the global array containing all guesses
+                              guessesArray.add(guesses);
+
+                              // print(
+                              //     "the size of the guessarray is $guessesArray");
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Draggable(
+                                    onDragCompleted: () {
+                                      setState(() {
+                                        // print ("editing guesses!!");
+                                        guessesArray[index][0] = "";
+                                      });
+                                    },
+                                    data: guessesArray[index][0],
+                                    feedback: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][0])),
+                                    ),
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                    ),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][0])),
+                                    ),
+                                  ),
+                                  Draggable(
+                                    onDragCompleted: () {
+                                      setState(() {
+                                        guessesArray[index][1] = "";
+                                      });
+                                    },
+                                    data: guessesArray[index][1],
+                                    feedback: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][1])),
+                                    ),
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                    ),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][1])),
+                                    ),
+                                  ),
+                                  Draggable(
+                                    onDragCompleted: () {
+                                      setState(() {
+                                        guessesArray[index][2] = "";
+                                      });
+                                    },
+                                    data: guessesArray[index][2],
+                                    feedback: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][2])),
+                                    ),
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                    ),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][2])),
+                                    ),
+                                  ),
+                                  Draggable(
+                                    onDragCompleted: () {
+                                      setState(() {
+                                        guessesArray[index][3] = "";
+                                      });
+                                    },
+                                    data: guessesArray[index][3],
+                                    feedback: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][3])),
+                                    ),
+                                    childWhenDragging: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                    ),
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                          // color: Colors.blue,
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                                'lib/images/background_image.png'),
+                                          ),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      child: Center(
+                                          child: Text(guessesArray[index][3])),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                            separatorBuilder: (context, index) {
+                              return Padding(
+                                  padding: EdgeInsets.only(bottom: 10));
+                            },
+                            itemCount: 2),
+                      ),
+                      Expanded(
+                          child: GridView.count(
+                        padding: EdgeInsets.all(10),
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        crossAxisCount: 5,
+                        children: this.a,
+                      )),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // ClipPath(
+                          //   clipper: TriangleClipper(),
+                          //   child: ElevatedButton(onPressed: () {}, child: Text("Hint")),
+                          // )
+
+                          // ClipRRect(
+                          //
+                          // )
+                          ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  showHint = false;
+                                  hintArray = [];
+                                });
+                                resetGame();
+                              },
+                              child: Text("Clear")),
+                          ElevatedButton(
+                              onPressed: () {
+                                adDialog(context, 1, true);
+                                resetGame();
+                                setState(() {
+                                  showHint = true;
+                                });
+                              },
+                              child: Text("Hint")),
+                          //To be clipped for a nice ui
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ),
             ),
-          );
+        );
   }
 }
