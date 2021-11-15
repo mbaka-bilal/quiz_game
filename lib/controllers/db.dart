@@ -10,7 +10,6 @@ import 'package:flutter/widgets.dart';
 class DatabaseAccess {
   static late Database db;
 
-
   DatabaseAccess() {
     /* constructor */
     WidgetsFlutterBinding.ensureInitialized();
@@ -21,25 +20,18 @@ class DatabaseAccess {
   Future<void> makeDatabase() async {
     final databasePath = await getDatabasesPath();
 
-    final dbPath =
-    join(databasePath, 'questions.db');
-
+    final dbPath = join(databasePath, 'questions.db');
 
     db = await openDatabase(dbPath, version: 1, onCreate: (db, version) {
       createTables(db, version);
-    }
-
-
-    );
+    });
 
     // createTables(database, 1);
     // insertQuestions(database);
     // stage1questions(database).then((value) => print(value));
 
-
     // return database;
   }
-
 
   Future<void> createTables(Database db, int v) async {
     print("in create table");
@@ -49,7 +41,7 @@ class DatabaseAccess {
       'CREATE TABLE users (id INTEGER PRIMARY KEY,life INTEGER)',
     );
     await db.execute(
-      'CREATE TABLE stages (id INTEGER PRIMARY KEY,stagename TEXT,locked INTEGER,done INTEGER)',
+      'CREATE TABLE stages (id INTEGER PRIMARY KEY,stagename TEXT,laststop INTEGER,locked INTEGER,done INTEGER)',
     );
     await db.execute(
       'CREATE TABLE stage1 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
@@ -66,7 +58,7 @@ class DatabaseAccess {
   }
 
   Future<void> insertUsers(Database db) async {
-    await db.insert("users",{"id": 0,"life": 5});
+    await db.insert("users", {"id": 0, "life": 5});
   }
 
   Future<void> insertQuestions(Database db) async {
@@ -83,15 +75,15 @@ class DatabaseAccess {
   }
 
   Future<void> insertStages(Database db) async {
-    for (int i=0; i < 20; i++){
+    for (int i = 0; i < 20; i++) {
       await db.insert("stages", listOfStages[i]);
     }
   }
 
-  static Future<void> updateTable(String tablename,Map<String,dynamic> content,int id) async{
-    await db.update(tablename, content,where: 'id = ?', whereArgs: [id]);
+  static Future<void> updateTable(
+      String tablename, Map<String, dynamic> content, int id) async {
+    await db.update(tablename, content, where: 'id = ?', whereArgs: [id]);
   }
-
 
   static Future<List<QuestionsMap>> stage1Questions() async {
     /* Get the stage1 questions and put it in an array */
@@ -106,21 +98,21 @@ class DatabaseAccess {
     });
   }
 
-  static Future<List<QuestionsMap>> stage2Questions() async {
-    /* Get the stage2 questions and put it in an array */
-    final List<Map<String, dynamic>> maps = await db.query("stage2");
+  // static Future<List<QuestionsMap>> stage2Questions() async {
+  //   /* Get the stage2 questions and put it in an array */
+  //   final List<Map<String, dynamic>> maps = await db.query("stage2");
 
-    return List.generate(maps.length, (index) {
-      return QuestionsMap(
-          id: maps[index]["id"],
-          question: maps[index]["question"],
-          answer: maps[index]["answer"],
-          solved: maps[index]["solved"]);
-    });
-  }
+  //   return List.generate(maps.length, (index) {
+  //     return QuestionsMap(
+  //         id: maps[index]["id"],
+  //         question: maps[index]["question"],
+  //         answer: maps[index]["answer"],
+  //         solved: maps[index]["solved"]);
+  //   });
+  // }
 
   static Future<List<QuestionsMap>> getStageQuestions(int stage) async {
-    final List<Map<String,dynamic>> maps = await db.query("stage$stage");
+    final List<Map<String, dynamic>> maps = await db.query("stage$stage");
 
     return List.generate(maps.length, (index) {
       return QuestionsMap(
@@ -128,35 +120,33 @@ class DatabaseAccess {
           question: maps[index]["question"],
           answer: maps[index]["answer"],
           solved: maps[index]["solved"]);
-
     });
   }
 
   static Future<List<StagesMap>> theStages() async {
     /* get all the stages and their information */
-    final List<Map<String,dynamic>> maps = await db.query("stages");
+    final List<Map<String, dynamic>> maps = await db.query("stages");
 
     // print ("in the stages function the map is ${maps}");
 
-    return List.generate(maps.length,(index) {
+    return List.generate(maps.length, (index) {
       return StagesMap(
-        id: maps[index]["id"],
-        stagename: maps[index]["stagename"],
-        locked: maps[index]["locked"],
-        done: maps[index]["done"]
-      );
+          id: maps[index]["id"],
+          stagename: maps[index]["stagename"],
+          lastStop: maps[index]["laststop"],
+          locked: maps[index]["locked"],
+          done: maps[index]["done"]);
     });
   }
 
   static Future<List<UsersInfoMap>> usersInfo() async {
-    final List<Map<String,dynamic>> maps = await db.query("users");
+    final List<Map<String, dynamic>> maps = await db.query("users");
 
     // print ("in usersInfo the users info is $maps");
 
     return List.generate(maps.length, (index) {
-      return UsersInfoMap(id: maps[index]["id"], livesLeft: maps[index]["life"]);
-
+      return UsersInfoMap(
+          id: maps[index]["id"], livesLeft: maps[index]["life"]);
     });
   }
-
 }

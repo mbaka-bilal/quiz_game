@@ -2,8 +2,8 @@ var stage1 = [
   {
     "id": 0,
     "question": "What city is the capital of productivity",
-    "answer" : "PRODUCT",
-    "solved" : 1
+    "answer": "PRODUCT",
+    "solved": 1
   },
   {
     "id": 1,

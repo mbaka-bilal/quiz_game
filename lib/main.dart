@@ -1,12 +1,21 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:quiz_game/controllers/db.dart';
 
 import 'package:quiz_game/views/select_stage.dart';
 
+void main() async {
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString('lib/google_fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['google_fonts'], license);
+  });
 
-void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  await MobileAds.instance.initialize();
   runApp(MyApp());
 }
 
@@ -39,58 +48,63 @@ class _FirstPageState extends State<FirstPage> {
   //setUp the database;
   var aD = DatabaseAccess();
 
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
     // #3734eb
     return Scaffold(
       body: Container(
-        color: Color(0xFF255958   ), //577575
+        // color: Color(0xFF255958), //577575
+        decoration: BoxDecoration(
+            image: DecorationImage(
+                fit: BoxFit.fitHeight,
+                image: AssetImage("lib/images/questionmark4.jpeg",
+
+                )
+            )
+        ),
 
         child: SafeArea(
           child: Column(
             // mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
               Padding(padding: EdgeInsets.only(bottom: 10)),
-
-              Container(
-                width: 200,
-                height: 200,
-                child: Image.asset("lib/images/alien_waving.gif"),
-              ),
-
-              Padding(padding: EdgeInsets.only(bottom: 10)),
-
-
+              // Container(
+              //   width: 200,
+              //   height: 200,
+              //   child: Image.asset("lib/images/alien_waving.gif"),
+              // ),
+              Padding(padding: EdgeInsets.only(bottom: 90)),
               Center(
-                child:
-                Text.rich(TextSpan(
-                  children: <TextSpan> [
-                    TextSpan(
-                      text: "Quiz Game",
-                      style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold
-                      )
-                    ),
-                    TextSpan(
-                      text: "\n       Welcome Player",
-
-                      style: TextStyle(
+                  child: Text.rich(TextSpan(children: <TextSpan>[
+                TextSpan(
+                    text: "Quiz",
+                    style:
+                        TextStyle(fontSize: 80, fontWeight: FontWeight.bold,
+                        fontFamily: 'Lobster',
+                        )),
+                TextSpan(
+                    text: " Game",
+                    style: TextStyle(
+                        fontFamily: 'Lobster',
+                      fontSize: 70,
                         fontWeight: FontWeight.bold,
-                      )
-                    )
-                  ]
-                ))
-
-
-              ),
-
-
-
-
+                      color: Colors.green
+                    ))
+              ]))),
               Expanded(
                   flex: 1,
                   child: Container(
@@ -107,14 +121,14 @@ class _FirstPageState extends State<FirstPage> {
 
                         GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(_createRoute());
+                            Navigator.of(context)
+                                .pushReplacement(_createRoute());
                           },
                           child: Container(
                             width: 200,
                             height: 200,
-                            // color: Colors.blue,
+                            // color: Colors.green,
                             child: Wrap(
-
                               children: [
                                 // Container(
                                 //   width: 10,
@@ -143,8 +157,7 @@ class _FirstPageState extends State<FirstPage> {
                         //         }, child: Text("Rankings")))),
                       ],
                     ),
-                  )
-              )
+                  ))
             ],
           ),
         ),
@@ -152,35 +165,42 @@ class _FirstPageState extends State<FirstPage> {
     );
   }
 
-  Route _createRoute(){
+  Route _createRoute() {
     return PageRouteBuilder(
-        transitionDuration: Duration(seconds: 1,),
-        pageBuilder: (context,animation,secondaryAnimation) => SelectStage(),
-      transitionsBuilder: (context,animation,secondaryAnimation,child) {
+        transitionDuration: Duration(
+          seconds: 1,
+        ),
+        pageBuilder: (context, animation, secondaryAnimation) => SelectStage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOut;
 
-      const begin = Offset(0.0,1.0);
-      const end = Offset.zero;
-      const curve = Curves.easeOut;
+          var tween =
+              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
-      var tween = Tween(begin: begin,end: end).chain(CurveTween(curve: curve));
-
-      return SlideTransition(position: animation.drive(tween),child: child,);
-      }
-
-    );
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        });
   }
 
   Future<void> shrinkButton() async {
-    Timer.periodic(Duration(seconds: 1, ),(Timer t) {setState(() {
-      if (this.divider <= 1.6){
-        // print (this.divider);
-        this.divider = divider + 0.1;
-
-      }else{
-        // print ("maximum reached");
-        t.cancel();
-      }
-    });});
+    Timer.periodic(
+        Duration(
+          seconds: 1,
+        ), (Timer t) {
+      setState(() {
+        if (this.divider <= 1.6) {
+          // print (this.divider);
+          this.divider = divider + 0.1;
+        } else {
+          // print ("maximum reached");
+          t.cancel();
+        }
+      });
+    });
   }
 }
 
@@ -191,23 +211,25 @@ class BouncingBall extends StatefulWidget {
   _BouncingBallState createState() => _BouncingBallState();
 }
 
-class _BouncingBallState extends State<BouncingBall> with SingleTickerProviderStateMixin {
+class _BouncingBallState extends State<BouncingBall>
+    with SingleTickerProviderStateMixin {
   late AnimationController controller;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    controller = AnimationController(vsync: this,
-    duration: Duration(seconds: 1,),
+    controller = AnimationController(
+      vsync: this,
+      duration: Duration(
+        seconds: 1,
+      ),
       lowerBound: 5,
       upperBound: 30,
     );
 
     controller.addListener(() {
-      setState(() {
-
-      });
+      setState(() {});
     });
 
     controller.repeat(reverse: true);
@@ -218,19 +240,24 @@ class _BouncingBallState extends State<BouncingBall> with SingleTickerProviderSt
     // TODO: implement dispose
     controller.dispose();
     super.dispose();
-
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
+
       margin: EdgeInsets.only(top: controller.value),
       child: Container(
         child: CircleAvatar(
-          child: Text("Play", style: TextStyle(
-            fontSize: 70,
-            fontWeight: FontWeight.bold,
-          ),),
+          backgroundColor: Colors.green,
+          child: Text(
+            "Play",
+            style: TextStyle(
+              fontFamily: "Lobster",
+              fontSize: 70,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         width: 200.0,
         height: 190.0,
