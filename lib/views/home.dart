@@ -85,15 +85,249 @@ class _HomeState extends State<Home> {
   bool _isGetLivesPressed = false;
   late Timer timer;
   late AudioPlayer player;
+  int lastPosition = 0;
+  String lastLetter = "";
 
   // List<String> menu = ["Settings"];
   List<Widget> livesList = [];
   GlobalKey _key = GlobalKey();
-  dynamic _popKey;
+  // dynamic _popKey;
 
   Future<InitializationStatus> _initGoogleMobileAds() {
     return MobileAds.instance.initialize();
   }
+
+
+  void undo() {
+    //undo the last drag entry
+
+    setState(() {
+      this.a[0] =
+
+          DragTarget(onWillAccept: (value) {
+        return true;
+      }, onAccept: (value) {
+        setState(() {
+
+          this.lastPosition = 0;
+          this.lastLetter = value as String;
+          solution[lastPosition] = value as String;
+          playerAnswer = playerAnswer + solution[lastPosition]; //use this to know if user has put something in all the
+          //available answer spaces.
+        });
+
+        if (showHint &&
+            playerAnswer.length ==
+                (widget.questions[currentQuestionIndex].answer
+                    .length -
+                    hintArray.length)) {
+          // if user has used hint to enter
+          // if the hint == the answer - the number of hints given
+
+          if (solution.join("") ==
+              widget.questions[currentQuestionIndex].answer) {
+            bool toNextQuestion = ((widget.questions.length - 1) ==
+                currentQuestionIndex)
+                ? true
+                : false; //Is user at the maximum question for that stage
+
+            (!toNextQuestion)
+                ? setState(() {
+              // should user progress?
+              DatabaseAccess.updateTable(
+                // change the state of the current question to answered
+                  "stage${widget.stageNumber}",
+                  {"solved": 0},
+                  widget.questions[currentQuestionIndex].id);
+
+              DatabaseAccess.updateTable(
+                //save the progress of the player
+                  "stages",
+                  {"laststop": currentQuestionIndex},
+                  (widget.stageNumber - 1));
+
+              currentQuestionIndex++;
+              showHint = false; //reset the hint state
+              resetGame();
+            })
+                : showDialog(
+                barrierDismissible: false,
+                context: context,
+                builder: (_) {
+                  /* update the stage status because the user has answered all questions correctly */
+
+                  // print ("In Build of show Dialog");
+
+                  /** play cheering sound because user has passed a stage **/
+                  player.setAsset("lib/audio/cheering.mp3");
+                  player.play();
+                  /** play cheering because user has passed a stage **/
+
+                  // Give user 2 extra lives for passing a stage
+                  if (this.currentLivesLeft < 4) {
+                    DatabaseAccess.updateTable(
+                        "users",
+                        {"life": (this.currentLivesLeft + 2)},
+                        widget.userId);
+
+                    this.currentLivesLeft + 2;
+                  } else if (this.currentLivesLeft == 4) {
+                    DatabaseAccess.updateTable(
+                        "users",
+                        {"life": (this.currentLivesLeft + 1)},
+                        widget.userId);
+
+                    this.currentLivesLeft++;
+                  }
+
+                  return nextStageDialog();
+                });
+            // resetGame();
+          } else {
+            DatabaseAccess.updateTable("users",
+                {"life": (currentLivesLeft - 1)}, widget.userId);
+
+            setState(() {
+              currentLivesLeft--;
+              this.showHint = false;
+            });
+            // if lives left is 0, show the alertdialog without the option to tryagain
+            // else show the alert dialog with option to try again
+            (currentLivesLeft == 0)
+                ? lifeFinished(context)
+                : print("Failed to question -------------");
+            showDialog(
+                barrierColor: Colors.transparent,
+                barrierDismissible: false,
+                context: context,
+                builder: (_) {
+                  return Alert(3, context);
+                });
+          }
+        }
+
+        /* This one is for an answer without a hint */
+        if (playerAnswer.length ==
+            widget.questions[currentQuestionIndex].answer.length) {
+          // checks to see if the answers are the same length
+          // if they are the same length then check to see if they are the same answer
+
+          if (solution.join("") ==
+              widget.questions[currentQuestionIndex].answer) {
+            bool toNextQuestion = ((widget.questions.length - 1) ==
+                currentQuestionIndex)
+                ? true
+                : false; //Is user at the maximum question for that stage
+
+            (!toNextQuestion)
+                ? setState(() {
+              /* Logic if the user gets this question move on to the next one */
+
+              DatabaseAccess.updateTable(
+                // change the state of the current question to answered
+                  "stage${widget.stageNumber}",
+                  {"solved": 0},
+                  widget.questions[currentQuestionIndex].id);
+
+              DatabaseAccess.updateTable(
+                //save the progress of the player
+                  "stages",
+                  {"laststop": currentQuestionIndex + 1},
+                  (widget.stageNumber - 1));
+
+              currentQuestionIndex++;
+
+              resetGame();
+              // playerAnswer = ""; //reset the players answer
+              // guessesArray = []; //reset the guesses
+              // a = []; //empty array a first
+              // solution = []; //empty the solutions array
+              //
+              // answerToArray(widget
+              //     .questions[currentQuestionIndex]
+              //     .answer); //to recreate the options box with the new answer
+            })
+                : showDialog(
+                context: context,
+                builder: (_) {
+                  /* update the stage status because the user has answered all questions correctly */
+                  // we assume that the for the user to reach this point the user must have
+                  // answered all the questions correctly
+
+                  /** play cheering sound because user has failed a question **/
+                  player = AudioPlayer();
+                  player.setAsset("lib/audio/cheering.mp3");
+                  player.play();
+                  /** play cheering because user has failed a question **/
+
+                  return nextStageDialog();
+                });
+          } else {
+            // print ("user has failed it -------------");
+
+            DatabaseAccess.updateTable("users",
+                {"life": (currentLivesLeft - 1)}, widget.userId);
+            //user failed the question
+            setState(() {
+              currentLivesLeft = currentLivesLeft - 1;
+
+              showHint = false; //reset the hint state
+            });
+
+            createLives(this.currentLivesLeft);
+
+            // if lives left is 0, show the alertdialog without the option to tryagain
+            // else show the alert dialog with option to try again
+
+            (currentLivesLeft == 0)
+                ? lifeFinished(context)
+                : showDialog(
+                barrierColor: Colors.transparent,
+                barrierDismissible: false,
+                context: (context),
+                builder: (_) {
+                  return Alert(currentLivesLeft, context);
+                }).then((value) {
+              //incase the player clicks the back button on mobile phone
+              // instead of the one in the app.
+
+              resetGame();
+              setState(() {
+                this.showHint =
+                false; //reset the show hint option to be false;
+              });
+            });
+            //to recreate the options box
+          }
+        }
+      }, builder: (context, candidateData, rejectedData) {
+        return Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            // image: DecorationImage(
+            //   image: AssetImage('lib/images/background_image.png'),
+            // ),
+              color: Colors.black,
+              border: Border.all(color: Colors.black)),
+          child: Center(
+              child: Text(
+                "Z",
+                style: TextStyle(
+                    color: Colors.brown,
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold),
+              )),
+        );
+      });
+
+    });
+
+    setState(() {
+
+    });
+  }
+
 
   bool checkAnswer(String answer, String attempt) {
     if (answer == attempt) {
@@ -124,6 +358,9 @@ class _HomeState extends State<Home> {
   Future<void> options() async {
     // create my DragTargets for putting my answers in.
 
+    this.a = [];
+
+
     for (int i = 0; i < answerArray.length; i++) {
       // create place holder for DragTarget Widgets
       if (hintArray.contains(answerArray[i]) && showHint) {
@@ -144,15 +381,19 @@ class _HomeState extends State<Home> {
                       image: DecorationImage(
                         image: AssetImage('lib/images/background_image.png'),
                       ),
-                      border: Border.all(color: Colors.black)),
+                      border: Border.all(color: Colors.blueAccent)),
                   child: Center(child: Text(answerArray[i])),
                 )
               : DragTarget(onWillAccept: (value) {
                   return true;
                 }, onAccept: (value) {
                   setState(() {
+                    // this.a[i] = Container(child: Text("H"));
+                    this.lastPosition = 0;
+                    this.lastLetter = value as String;
                     solution[i] = value as String;
-                    playerAnswer = playerAnswer + solution[i];
+                    playerAnswer = playerAnswer + solution[i]; //use this to know if user has put something in all the
+                    //available answer spaces.
                   });
 
                   if (showHint &&
@@ -182,24 +423,22 @@ class _HomeState extends State<Home> {
                               DatabaseAccess.updateTable(
                                   //save the progress of the player
                                   "stages",
-                                  {"laststop": currentQuestionIndex + 1},
+                                  {"laststop": currentQuestionIndex},
                                   (widget.stageNumber - 1));
 
                               currentQuestionIndex++;
                               showHint = false; //reset the hint state
+                              resetGame();
                             })
                           : showDialog(
                               barrierDismissible: false,
                               context: context,
                               builder: (_) {
                                 /* update the stage status because the user has answered all questions correctly */
-                                // we assume that the for the user to reach this point the user must have
-                                // answered all the questions correctly
-                                DatabaseAccess.updateTable("stages",
-                                    {"done": 0}, widget.stageNumber - 1);
+
+                                // print ("In Build of show Dialog");
 
                                 /** play cheering sound because user has passed a stage **/
-                                player = AudioPlayer();
                                 player.setAsset("lib/audio/cheering.mp3");
                                 player.play();
                                 /** play cheering because user has passed a stage **/
@@ -223,7 +462,7 @@ class _HomeState extends State<Home> {
 
                                 return nextStageDialog();
                               });
-                      resetGame();
+                      // resetGame();
                     } else {
                       DatabaseAccess.updateTable("users",
                           {"life": (currentLivesLeft - 1)}, widget.userId);
@@ -253,7 +492,7 @@ class _HomeState extends State<Home> {
                     // checks to see if the answers are the same length
                     // if they are the same length then check to see if they are the same answer
 
-                    if (playerAnswer ==
+                    if (solution.join("") ==
                         widget.questions[currentQuestionIndex].answer) {
                       bool toNextQuestion = ((widget.questions.length - 1) ==
                               currentQuestionIndex)
@@ -277,14 +516,16 @@ class _HomeState extends State<Home> {
                                   (widget.stageNumber - 1));
 
                               currentQuestionIndex++;
-                              playerAnswer = ""; //reset the players answer
-                              guessesArray = []; //reset the guesses
-                              a = []; //empty array a first
-                              solution = []; //empty the solutions array
 
-                              answerToArray(widget
-                                  .questions[currentQuestionIndex]
-                                  .answer); //to recreate the options box with the new answer
+                              resetGame();
+                              // playerAnswer = ""; //reset the players answer
+                              // guessesArray = []; //reset the guesses
+                              // a = []; //empty array a first
+                              // solution = []; //empty the solutions array
+                              //
+                              // answerToArray(widget
+                              //     .questions[currentQuestionIndex]
+                              //     .answer); //to recreate the options box with the new answer
                             })
                           : showDialog(
                               context: context,
@@ -292,31 +533,12 @@ class _HomeState extends State<Home> {
                                 /* update the stage status because the user has answered all questions correctly */
                                 // we assume that the for the user to reach this point the user must have
                                 // answered all the questions correctly
-                                DatabaseAccess.updateTable("stages",
-                                    {"done": 0}, widget.stageNumber - 1);
 
                                 /** play cheering sound because user has failed a question **/
                                 player = AudioPlayer();
                                 player.setAsset("lib/audio/cheering.mp3");
                                 player.play();
                                 /** play cheering because user has failed a question **/
-
-                                // Give user 2 extra lives for passing a stage
-                                if (this.currentLivesLeft < 4) {
-                                  DatabaseAccess.updateTable(
-                                      "users",
-                                      {"life": (this.currentLivesLeft + 2)},
-                                      widget.userId);
-
-                                  this.currentLivesLeft + 2;
-                                } else if (this.currentLivesLeft == 4) {
-                                  DatabaseAccess.updateTable(
-                                      "users",
-                                      {"life": (this.currentLivesLeft + 1)},
-                                      widget.userId);
-
-                                  this.currentLivesLeft++;
-                                }
 
                                 return nextStageDialog();
                               });
@@ -381,7 +603,15 @@ class _HomeState extends State<Home> {
     }
   }
 
+  assignSounds() async {
+    AudioPlayer player = AudioPlayer();
+    await player.setAsset("lib/audio/water_drop.mp3");
+  }
+
   void answerToArray(String answer) {
+    assignSounds();
+    this.answerArray = [];
+
     for (int i = 0; i < answer.length; ++i) {
       this.answerArray.add(answer[i]);
     }
@@ -482,58 +712,18 @@ class _HomeState extends State<Home> {
       child: AlertDialog(
         insetPadding: EdgeInsets.all(0),
         backgroundColor: Colors.transparent,
-        // actionsPadding: EdgeInsets.all(0),
-        // actionsOverflowButtonSpacing: 0,
         content: Container(
           height: 100,
           child: Column(
             children: [
-              // Container(
-              //     width: 150,
-              //     height: 150,
-              //     child: Image.asset("lib/images/champ_cup.gif")
-              //
-              // ),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.center,
-              //   children: [
-              //     Padding(padding: EdgeInsets.only(right: 10)),
-              //     Text(
-              //       "Hurray Champ, Stage ${widget.stageNumber} cleared",
-              //       style: TextStyle(
-              //         fontSize: 20,
-              //         fontWeight: FontWeight.bold,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              // Padding(padding: EdgeInsets.only(bottom: 10)),
-              // Expanded(
-              //   child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.center,
-              //     children: [
-              //       if (this.currentLivesLeft < 5)
-              //         Text("+2  ",
-              //             style: TextStyle(
-              //               fontSize: 20,
-              //               fontWeight: FontWeight.bold,
-              //             )),
-              //       Icon(
-              //         Icons.favorite,
-              //         color: Colors.red,
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              // Padding(padding: EdgeInsets.only(bottom: 10)),
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: IconButton(
-                        //option to try again with reduced life
-                        onPressed: () {
+                        //replay the level
+                        onPressed: () async {
                           setState(() {
                             this.showHint =
                                 false; //reset the show hint option to be false;
@@ -543,6 +733,20 @@ class _HomeState extends State<Home> {
                             this.currentQuestionIndex = 0;
                           });
                           resetGame();
+
+                          //set the stage finished to false
+                          await DatabaseAccess.updateTable(
+                              "stages", {"done": 1}, widget.stageNumber - 1);
+
+                          //set the state of all the questions to not answered
+                          for (int i = 0; i < widget.questions.length; i++) {
+                            await DatabaseAccess.updateTable(
+                                // change the state of the current question to answered
+                                "stage${widget.stageNumber}",
+                                {"solved": 0},
+                                widget.questions[currentQuestionIndex].id);
+                          }
+
                           Navigator.of(context).pop();
                         },
                         icon: Icon(
@@ -557,7 +761,44 @@ class _HomeState extends State<Home> {
                     ),
                     Expanded(
                       child: IconButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await DatabaseAccess.updateTable(
+                              "stages", {"done": 0}, widget.stageNumber - 1);
+
+                          await DatabaseAccess.updateTable(
+                              // change the state of the current question to answered
+                              "stage${widget.stageNumber}",
+                              {"solved": 0},
+                              widget.questions[currentQuestionIndex].id);
+
+                          await DatabaseAccess.updateTable(
+                              //save the progress of the player
+                              "stages",
+                              {"laststop": currentQuestionIndex},
+                              (widget.stageNumber - 1));
+
+                          // we assume that the for the user to reach this point the user must have
+                          // answered all the questions correctly
+                          await DatabaseAccess.updateTable(
+                              "stages", {"done": 0}, widget.stageNumber - 1);
+
+                          // Give user 2 extra lives for passing a stage
+                          if (this.currentLivesLeft < 4) {
+                            await DatabaseAccess.updateTable(
+                                "users",
+                                {"life": (this.currentLivesLeft + 2)},
+                                widget.userId);
+
+                            this.currentLivesLeft + 2;
+                          } else if (this.currentLivesLeft == 4) {
+                            await DatabaseAccess.updateTable(
+                                "users",
+                                {"life": (this.currentLivesLeft + 1)},
+                                widget.userId);
+
+                            this.currentLivesLeft++;
+                          }
+
                           Navigator.of(context)
                               .pushReplacement(createRoute(SelectStage()));
                         },
@@ -571,25 +812,6 @@ class _HomeState extends State<Home> {
                   ],
                 ),
               ),
-              // Padding(padding: EdgeInsets.only(bottom: 20)),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.center,
-              //   children: [
-              //     Text(
-              //       "To next Stage?",
-              //       style: TextStyle(
-              //         fontWeight: FontWeight.bold,
-              //         fontStyle: FontStyle.italic,
-              //       ),
-              //     ),
-              //     Padding(padding: EdgeInsets.only(right: 20)),
-              //     Container(
-              //         width: 50,
-              //         height: 50,
-              //         child: Image.asset(
-              //             "lib/images/mickey_mouse_disney_hats_off.gif"))
-              //   ],
-              // )
             ],
           ),
         ),
@@ -597,53 +819,52 @@ class _HomeState extends State<Home> {
     );
   }
 
-  adDialog(BuildContext context, int popnumber, bool isHint) {
-    int count = 0;
-    showGeneralDialog(
-        barrierDismissible: false,
-        context: context,
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return Container(
-            color: Colors.blue,
-            child: Column(
-              children: [
-                Text("An AD to be displayed"),
-                ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        //give a user one life for the video watched or add clicked
-
-                        DatabaseAccess.updateTable("users",
-                            {"life": (currentLivesLeft + 1)}, widget.userId);
-                        if (!isHint) {
-                          //if it is not a hint, it means the user want more life,
-                          // when user has watched video or ad has shown
-                          // increase the life
-                          this.currentLivesLeft++;
-                        }
-                      });
-                      resetGame();
-                      Navigator.popUntil(context, (route) {
-                        // remove the two top most pages from the stack
-                        return count++ == popnumber;
-                      });
-                    },
-                    child: Text("done"))
-              ],
-            ),
-          );
-        });
-  }
+  // adDialog(BuildContext context, int popnumber, bool isHint) {
+  //   int count = 0;
+  //   showGeneralDialog(
+  //       barrierDismissible: false,
+  //       context: context,
+  //       pageBuilder: (context, animation, secondaryAnimation) {
+  //         return Container(
+  //           color: Colors.blue,
+  //           child: Column(
+  //             children: [
+  //               ElevatedButton(
+  //                   onPressed: () {
+  //                     setState(() {
+  //                       //give a user one life for the video watched or add clicked
+  //
+  //                       DatabaseAccess.updateTable("users",
+  //                           {"life": (currentLivesLeft + 1)}, widget.userId);
+  //                       if (!isHint) {
+  //                         //if it is not a hint, it means the user want more life,
+  //                         // when user has watched video or ad has shown
+  //                         // increase the life
+  //                         this.currentLivesLeft++;
+  //                       }
+  //                     });
+  //                     resetGame();
+  //                     Navigator.popUntil(context, (route) {
+  //                       // remove the two top most pages from the stack
+  //                       return count++ == popnumber;
+  //                     });
+  //                   },
+  //                   child: Text("done"))
+  //             ],
+  //           ),
+  //         );
+  //       });
+  // }
 
   void resetGame() {
     /* reset the game so the user can try again */
     setState(() {
       // if player failed the question
-      playerAnswer = ""; //reset the players answer
-      guessesArray = []; //reset the guesses
-      a = []; //empty array a first
-      solution = []; //empty the solutions array
-      hintArray = []; //reset the hints array
+      this.playerAnswer = ""; //reset the players answer
+      this.guessesArray = []; //reset the guesses
+      this.a = []; //empty array a first for the drag targets
+      this.solution = []; //empty the solutions array
+      this.hintArray = []; //reset the hints array
 
       // options(); //recall this function to recreate the solutions box.
     });
@@ -792,8 +1013,6 @@ class _HomeState extends State<Home> {
 
     Future.delayed(Duration.zero,
         () => {if (this.currentLivesLeft == 0) lifeFinished(context)});
-
-    player = AudioPlayer(); //initialize the audio player
 
     createLives(currentLivesLeft);
   }
@@ -1035,26 +1254,8 @@ class _HomeState extends State<Home> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Center(
-                            //     child: Padding(
-                            //   padding: const EdgeInsets.only(top: 15.0),
-                            //   child: Text.rich(TextSpan(
-                            //       style: TextStyle(
-                            //         fontWeight: FontWeight.bold,
-                            //         fontSize: 32,
-                            //       ),
-                            //       children: [
-                            //         TextSpan(text: "STAGE  "),
-                            //         TextSpan(
-                            //             text: "${widget.stageNumber}",
-                            //             style: TextStyle(color: Colors.red))
-                            //       ])),
-                            // )),
                             Container(
-                              // color: Colors.transparent,
-                              decoration: BoxDecoration(
-                                  // border: Border.all()
-                                  ),
+                              decoration: BoxDecoration(),
                               width: 120,
                               child: Column(
                                 children: [
@@ -1088,7 +1289,6 @@ class _HomeState extends State<Home> {
                                                     backgroundColor:
                                                         Colors.transparent,
                                                     content: Container(
-                                                      // color: Colors.black38,
                                                       height: 200,
                                                       child: Column(
                                                         mainAxisAlignment:
@@ -1237,15 +1437,6 @@ class _HomeState extends State<Home> {
                                       );
                                     }
                                   },
-                                  // child: Container(
-                                  //   decoration: BoxDecoration(
-                                  //     image: DecorationImage(
-                                  //       image: AssetImage(
-                                  //         "lib/images/bulb_light_bulb.gif"
-                                  //       )
-                                  //     )
-                                  //   ),
-                                  // )
                                   child: Padding(
                                     padding: const EdgeInsets.only(right: 8.0),
                                     child: Container(
@@ -1262,7 +1453,14 @@ class _HomeState extends State<Home> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: GestureDetector(
-                                      onTap: () {},
+                                      onTap: () {
+
+                                         setState(() {
+                                           // this.a.removeAt(2);
+
+                                           undo();
+                                         });
+                                      },
                                       child: Icon(Icons.undo,
                                           size: 35, color: Colors.white38)),
                                 )
@@ -1342,9 +1540,8 @@ class _HomeState extends State<Home> {
                                 children: [
                                   Draggable(
                                     onDragCompleted: () async {
+
                                       /** Play audio for when the target is dropped **/
-                                      await player
-                                          .setAsset("lib/audio/water_drop.mp3");
                                       player.play();
                                       /** play audio **/
 
@@ -1388,10 +1585,8 @@ class _HomeState extends State<Home> {
                                   ),
                                   Draggable(
                                     onDragCompleted: () async {
+
                                       /** Play audio for when the target is dropped **/
-                                      player = AudioPlayer();
-                                      await player
-                                          .setAsset("lib/audio/water_drop.mp3");
                                       player.play();
                                       /** play audio **/
 
@@ -1420,10 +1615,6 @@ class _HomeState extends State<Home> {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                          // image: DecorationImage(
-                                          //   image: AssetImage(
-                                          //       'lib/images/background_image.png'),
-                                          // ),
                                           color: Colors.black,
                                           border:
                                               Border.all(color: Colors.black)),
@@ -1441,9 +1632,6 @@ class _HomeState extends State<Home> {
                                   Draggable(
                                     onDragCompleted: () async {
                                       /** Play audio for when the target is dropped **/
-                                      player = AudioPlayer();
-                                      await player
-                                          .setAsset("lib/audio/water_drop.mp3");
                                       player.play();
                                       /** play audio **/
 
@@ -1451,9 +1639,7 @@ class _HomeState extends State<Home> {
                                         guessesArray[index][2] = "";
                                       });
                                     },
-
                                     data: guessesArray[index][2],
-
                                     feedback: Center(
                                       child: Text(guessesArray[index][2],
                                           style: TextStyle(
@@ -1463,26 +1649,6 @@ class _HomeState extends State<Home> {
                                             decoration: TextDecoration.none,
                                           )),
                                     ),
-
-                                    /* play sound when the user is dragging */
-                                    // onDragStarted: () async {
-                                    //   player = AudioPlayer();
-                                    //   await player.setAsset(
-                                    //       "lib/audio/dragging_sound.mp3");
-                                    //   player.play();
-                                    // },
-
-                                    // onDragEnd:(DraggableDetails draggableDetails) {
-                                    //   player.stop();
-                                    // } ,
-
-                                    // onDragUpdate: (DragUpdateDetails
-                                    // dragUpdateDetails) async {
-                                    //   // player.stop();
-                                    //   player.play();
-                                    // },
-                                    // /* end play sound */
-
                                     childWhenDragging: Container(
                                       width: 40,
                                       height: 40,
@@ -1491,15 +1657,10 @@ class _HomeState extends State<Home> {
                                           border:
                                               Border.all(color: Colors.black)),
                                     ),
-
                                     child: Container(
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                          // image: DecorationImage(
-                                          //   image: AssetImage(
-                                          //       'lib/images/background_image.png'),
-                                          // ),
                                           color: Colors.black,
                                           border:
                                               Border.all(color: Colors.black)),
@@ -1515,9 +1676,6 @@ class _HomeState extends State<Home> {
                                   Draggable(
                                     onDragCompleted: () async {
                                       /** Play audio for when the target is dropped **/
-                                      player = AudioPlayer();
-                                      await player
-                                          .setAsset("lib/audio/water_drop.mp3");
                                       player.play();
                                       /** play audio **/
 
@@ -1525,9 +1683,7 @@ class _HomeState extends State<Home> {
                                         guessesArray[index][3] = "";
                                       });
                                     },
-
                                     data: guessesArray[index][3],
-
                                     feedback: Center(
                                         child: Text(guessesArray[index][3],
                                             style: TextStyle(
@@ -1536,26 +1692,6 @@ class _HomeState extends State<Home> {
                                               fontWeight: FontWeight.bold,
                                               decoration: TextDecoration.none,
                                             ))),
-
-                                    /* play sound when the user is dragging */
-                                    // onDragStarted: () async {
-                                    //   player = AudioPlayer();
-                                    //   await player.setAsset(
-                                    //       "lib/audio/dragging_sound.mp3");
-                                    //   player.play();
-                                    // },
-
-                                    // onDragEnd:(DraggableDetails draggableDetails) {
-                                    //   player.stop();
-                                    // } ,
-
-                                    // onDragUpdate: (DragUpdateDetails
-                                    // dragUpdateDetails) async {
-                                    //   // player.stop();
-                                    //   player.play();
-                                    // },
-                                    /* end play sound */
-
                                     childWhenDragging: Container(
                                       width: 40,
                                       height: 40,
@@ -1564,15 +1700,10 @@ class _HomeState extends State<Home> {
                                           border:
                                               Border.all(color: Colors.black)),
                                     ),
-
                                     child: Container(
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                          // image: DecorationImage(
-                                          //   image: AssetImage(
-                                          //       'lib/images/background_image.png'),
-                                          // ),
                                           color: Colors.black,
                                           border:
                                               Border.all(color: Colors.black)),

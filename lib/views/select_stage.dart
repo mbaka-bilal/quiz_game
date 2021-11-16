@@ -90,7 +90,24 @@ class _SelectStageState extends State<SelectStage> {
       index =
           0; // if user has solved all the questions always restart from the beg
     }
+
+    // print ("to be returned to position $index");
     return index;
+  }
+
+  int toLastStop(List<QuestionsMap> questions,int index) {
+    //where should the user resume to?
+
+    if (questions.length - 1 == index && questions[index].solved == 0) {
+      return 0; //back to the first questions if user has solved all the questions in the current stage
+    }else if (questions.length - 1 == index && questions[index].solved == 1){
+      return index;
+    }else if (questions[index].solved == 0){
+      return index + 1; // if question is not the last one and user has solved the current stop move on to the next one
+    }else {
+      return index; //if user has not solved the current question;
+    }
+
   }
 
   void _loadRewardedAd() {
@@ -167,10 +184,16 @@ class _SelectStageState extends State<SelectStage> {
         tempList.add(
           GestureDetector(
             onTap: () async {
+
+              // print ("The last question is que
+
+
               int questionIndex = 0;
 
               List<QuestionsMap> questions =
                   await DatabaseAccess.stage1Questions();
+
+              print ("The last stop is ${questions[2].solved}");
 
               questionIndex =
                   findIndex(questions); //get the index of the question
@@ -182,7 +205,7 @@ class _SelectStageState extends State<SelectStage> {
                   stageNumber: 1,
                   stageName: mapList[0].stagename,
                   userId: id,
-                  usersIndex: listOfStag[0].lastStop,
+                  usersIndex: toLastStop(questions, listOfStag[0].lastStop),
                 )));
               }
 
@@ -238,7 +261,9 @@ class _SelectStageState extends State<SelectStage> {
                 stageNumber: i + 1,
                 stageName: mapList[i].stagename,
                 userId: id,
-                usersIndex: listOfStag[i].lastStop,
+                // if user has solved the last question take the user back to question 1
+                // else let the user solve the last question
+                usersIndex: ( (listOfStag[i].lastStop == questions.length -1) && (questions[questions.length - 1].solved == 0)  ) ? 0 : listOfStag[i].lastStop,
               )));
             } else if (mapList[i - 1].done == 1 && mapList[i].locked == 0) {
               /* is the former stage not cleared, but the current stage has been unlocked, because
@@ -250,12 +275,10 @@ class _SelectStageState extends State<SelectStage> {
               errorDialog(context, i);
             } else {
               /* Has the user not cleared the former stage and has not watched an Ad,
-              then show the user the add
+                 then show the user the add
                */
 
               _loadRewardedAd(); //load the reward Ad
-
-              // print("the state of isRewarededad is ... $_isRewardedAdReady");
 
               if (_isRewardedAdReady) {
                 _rewardedAd.show(
