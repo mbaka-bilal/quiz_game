@@ -43,12 +43,19 @@ class DatabaseAccess {
     await db.execute(
       'CREATE TABLE stages (id INTEGER PRIMARY KEY,stagename TEXT,laststop INTEGER,locked INTEGER,done INTEGER)',
     );
-    await db.execute(
-      'CREATE TABLE stage1 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
-    );
-    await db.execute(
-      'CREATE TABLE stage2 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
-    );
+
+    // await db.execute(
+    //   'CREATE TABLE stage1 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
+    // );
+    // await db.execute(
+    //   'CREATE TABLE stage2 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
+    // );
+
+    for (int i = 1; i <= 20; i++) {
+      await db.execute(
+        'CREATE TABLE stage$i (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,hint TEXT,solved INTEGER)',
+      );
+    }
 
     // end creation of tables
 
@@ -62,15 +69,33 @@ class DatabaseAccess {
   }
 
   Future<void> insertQuestions(Database db) async {
-    for (int i = 0; i < stage1.length; i++) {
+    // var questionsList = [stage1,stage2,stage3,stage4,stage5,stage6,stage7,stage8,stage9,
+    // stage10,stage11,stage12,
+    //   stage13,stage14,stage15,stage16,stage17,stage18,stage19,stage20];
+
+    for (int i = 0; i <= 31; i++) {
       //insert stage1 questions
       // this works because stage1 is already in a map format.
       await db.insert("stage1", stage1[i]);
-    }
-
-    for (int i = 0; i < stage2.length; i++) {
-      //insert stage2 questions
       await db.insert("stage2", stage2[i]);
+      await db.insert("stage3", stage3[i]);
+      await db.insert("stage4", stage4[i]);
+      await db.insert("stage5", stage5[i]);
+      await db.insert("stage6", stage6[i]);
+      await db.insert("stage7", stage7[i]);
+      await db.insert("stage8", stage8[i]);
+      await db.insert("stage9", stage9[i]);
+      await db.insert("stage10", stage10[i]);
+      await db.insert("stage11", stage11[i]);
+      await db.insert("stage12", stage12[i]);
+      await db.insert("stage13", stage13[i]);
+      await db.insert("stage14", stage14[i]);
+      await db.insert("stage15", stage15[i]);
+      await db.insert("stage16", stage16[i]);
+      await db.insert("stage17", stage17[i]);
+      await db.insert("stage18", stage18[i]);
+      await db.insert("stage19", stage19[i]);
+      await db.insert("stage20", stage20[i]);
     }
   }
 
@@ -94,7 +119,8 @@ class DatabaseAccess {
           id: maps[index]["id"],
           question: maps[index]["question"],
           answer: maps[index]["answer"],
-          solved: maps[index]["solved"]);
+          solved: maps[index]["solved"],
+          hint: maps[index]["hint"]);
     });
   }
 
@@ -119,7 +145,8 @@ class DatabaseAccess {
           id: maps[index]["id"],
           question: maps[index]["question"],
           answer: maps[index]["answer"],
-          solved: maps[index]["solved"]);
+          solved: maps[index]["solved"],
+          hint: maps[index]["hint"]);
     });
   }
 

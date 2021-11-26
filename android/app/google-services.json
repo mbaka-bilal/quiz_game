@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:319844896841:android:013e0820134381b543ef98",
+        "mobilesdk_app_id": "1:319844896841:android:de7a884ec2c0f47643ef98",
         "android_client_info": {
-          "package_name": "com.example.quiz_game"
+          "package_name": "game.play.wordclass"
         }
       },
       "oauth_client": [

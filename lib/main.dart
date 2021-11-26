@@ -15,6 +15,8 @@ void main() async {
   });
 
   WidgetsFlutterBinding.ensureInitialized();
+  await Future.delayed(Duration(seconds: 7), () => DatabaseAccess());
+
   await MobileAds.instance.initialize();
   runApp(MyApp());
 }
@@ -42,6 +44,19 @@ class FirstPage extends StatefulWidget {
 }
 
 class _FirstPageState extends State<FirstPage> {
+  //setUp the database;
+
+  initState() {
+    super.initState();
+    // WidgetsBinding.instance!.addPostFrameCallback((_) => DatabaseAccess());
+  }
+
+  Widget build(BuildContext context) {
+    return Scaffold(body: SelectStage());
+  }
+}
+
+/*
   double opacityLevel = 1.0;
   double divider = 1.3;
 
@@ -59,8 +74,6 @@ class _FirstPageState extends State<FirstPage> {
     super.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     // #3734eb
@@ -70,11 +83,9 @@ class _FirstPageState extends State<FirstPage> {
         decoration: BoxDecoration(
             image: DecorationImage(
                 fit: BoxFit.fitHeight,
-                image: AssetImage("lib/images/questionmark4.jpeg",
-
-                )
-            )
-        ),
+                image: AssetImage(
+                  "lib/images/questionmark4.jpeg",
+                ))),
 
         child: SafeArea(
           child: Column(
@@ -91,19 +102,19 @@ class _FirstPageState extends State<FirstPage> {
               Center(
                   child: Text.rich(TextSpan(children: <TextSpan>[
                 TextSpan(
-                    text: "Quiz",
-                    style:
-                        TextStyle(fontSize: 80, fontWeight: FontWeight.bold,
-                        fontFamily: 'Lobster',
-                        )),
+                    text: "Word",
+                    style: TextStyle(
+                      fontSize: 80,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Lobster',
+                    )),
                 TextSpan(
-                    text: " Game",
+                    text: " Class",
                     style: TextStyle(
                         fontFamily: 'Lobster',
-                      fontSize: 70,
+                        fontSize: 70,
                         fontWeight: FontWeight.bold,
-                      color: Colors.green
-                    ))
+                        color: Colors.green))
               ]))),
               Expanded(
                   flex: 1,
@@ -245,7 +256,6 @@ class _BouncingBallState extends State<BouncingBall>
   @override
   Widget build(BuildContext context) {
     return Container(
-
       margin: EdgeInsets.only(top: controller.value),
       child: Container(
         child: CircleAvatar(
@@ -265,3 +275,5 @@ class _BouncingBallState extends State<BouncingBall>
     );
   }
 }
+
+*/

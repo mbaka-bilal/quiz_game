@@ -5,6 +5,7 @@ class UsersInfoMap {
   UsersInfoMap({
     required this.id,
     required this.livesLeft
+
 });
 
   Map<String,dynamic> toMap(){

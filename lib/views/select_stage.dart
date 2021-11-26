@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:quiz_game/controllers/ad_helper.dart';
 import 'package:quiz_game/controllers/db.dart';
@@ -9,6 +10,10 @@ import 'package:quiz_game/controllers/stages_map.dart';
 import 'package:quiz_game/controllers/useful_functions.dart';
 import 'package:quiz_game/controllers/usersinfo_map.dart';
 import 'package:quiz_game/views/home.dart';
+import 'package:quiz_game/views/widgets/doublecurvedcontainer.dart';
+import 'package:quiz_game/views/widgets/gamelevelbutton.dart';
+import 'package:quiz_game/views/widgets/shadowedtext.dart';
+import 'package:quiz_game/views/widgets/shineeffect.dart';
 
 class SelectStage extends StatefulWidget {
   const SelectStage({Key? key}) : super(key: key);
@@ -17,7 +22,10 @@ class SelectStage extends StatefulWidget {
   _SelectStageState createState() => _SelectStageState();
 }
 
-class _SelectStageState extends State<SelectStage> {
+class _SelectStageState extends State<SelectStage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation _animation;
   List<Widget> stagesWidget = [];
   List<StagesMap> listOfStag = [];
   List<String> test = ["a", "b"];
@@ -34,8 +42,24 @@ class _SelectStageState extends State<SelectStage> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     setStagesInformation();
     _initGoogleMobileAds();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3500),
+    )..addListener(() {
+        setState(() {});
+      });
+
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          0.6,
+          1.0,
+          curve: Curves.easeOut,
+        )));
   }
 
   @override
@@ -43,6 +67,7 @@ class _SelectStageState extends State<SelectStage> {
     super.dispose();
     this._loading = false;
     _rewardedAd.dispose();
+    _controller.dispose();
   }
 
   Future<InitializationStatus> _initGoogleMobileAds() {
@@ -95,19 +120,19 @@ class _SelectStageState extends State<SelectStage> {
     return index;
   }
 
-  int toLastStop(List<QuestionsMap> questions,int index) {
+  int toLastStop(List<QuestionsMap> questions, int index) {
     //where should the user resume to?
 
     if (questions.length - 1 == index && questions[index].solved == 0) {
       return 0; //back to the first questions if user has solved all the questions in the current stage
-    }else if (questions.length - 1 == index && questions[index].solved == 1){
+    } else if (questions.length - 1 == index && questions[index].solved == 1) {
       return index;
-    }else if (questions[index].solved == 0){
-      return index + 1; // if question is not the last one and user has solved the current stop move on to the next one
-    }else {
+    } else if (questions[index].solved == 0) {
+      return index +
+          1; // if question is not the last one and user has solved the current stop move on to the next one
+    } else {
       return index; //if user has not solved the current question;
     }
-
   }
 
   void _loadRewardedAd() {
@@ -182,18 +207,15 @@ class _SelectStageState extends State<SelectStage> {
     for (int i = 0; i < 20; i++) {
       if (i == 0) {
         tempList.add(
-          GestureDetector(
+          GameLevelButton(
+            width: 80.0,
+            height: 60.0,
+            borderRadius: 50.0,
             onTap: () async {
-
-              // print ("The last question is que
-
-
               int questionIndex = 0;
 
               List<QuestionsMap> questions =
                   await DatabaseAccess.stage1Questions();
-
-              print ("The last stop is ${questions[2].solved}");
 
               questionIndex =
                   findIndex(questions); //get the index of the question
@@ -213,28 +235,23 @@ class _SelectStageState extends State<SelectStage> {
                 adDialog(context, 0, mapList);
               }
             },
-            child: Card(
-              color: Colors.white12,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Stage 1",style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontFamily: "RoadRage",
-                    // fontWeight: FontWeight.bold,
-                  ),),
-                  Padding(padding: EdgeInsets.only(bottom: 10)),
-                  (mapList[0].locked == 0)
-                      ? Icon(Icons.lock_open,color: Colors.green,)
-                      : Icon(Icons.lock,color: Colors.red)
-                ],
-              ),
-            ),
+            text: "Stage 1",
+            icon: (mapList[i].locked == 0)
+                ? Icon(
+                    Icons.lock_open,
+                    color: Colors.green,
+                  )
+                : Icon(
+                    Icons.lock,
+                    color: Colors.red,
+                  ),
           ),
         );
       } else {
-        tempList.add(GestureDetector(
+        tempList.add(GameLevelButton(
+          width: 80.0,
+          height: 60.0,
+          borderRadius: 50.0,
           onTap: () async {
             setState(() {
               _loading = true;
@@ -263,7 +280,10 @@ class _SelectStageState extends State<SelectStage> {
                 userId: id,
                 // if user has solved the last question take the user back to question 1
                 // else let the user solve the last question
-                usersIndex: ( (listOfStag[i].lastStop == questions.length -1) && (questions[questions.length - 1].solved == 0)  ) ? 0 : listOfStag[i].lastStop,
+                usersIndex: ((listOfStag[i].lastStop == questions.length - 1) &&
+                        (questions[questions.length - 1].solved == 0))
+                    ? 0
+                    : listOfStag[i].lastStop,
               )));
             } else if (mapList[i - 1].done == 1 && mapList[i].locked == 0) {
               /* is the former stage not cleared, but the current stage has been unlocked, because
@@ -300,26 +320,16 @@ class _SelectStageState extends State<SelectStage> {
               }
             }
           },
-          child: Card(
-         color: Colors.white12,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text("Stage ${i + 1}",style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: "RoadRage",
-                  fontSize: 32,
-                  // fontWeight: FontWeight.bold,
-                ),),
-                Padding(padding: EdgeInsets.only(bottom: 10)),
-                (mapList[i].locked == 0)
-                    ? Icon(Icons.lock_open,color: Colors.green,)
-                    : Icon(Icons.lock,color: Colors.red,),
-                Padding(padding: EdgeInsets.only(bottom: 10)),
-                // if (_loading) loadingDialog() // when the user clickes the stage button
-              ],
-            ),
-          ),
+          text: "Stage ${i + 1}",
+          icon: (mapList[i].locked == 0)
+              ? Icon(
+                  Icons.lock_open,
+                  color: Colors.green,
+                )
+              : Icon(
+                  Icons.lock,
+                  color: Colors.red,
+                ),
         ));
       }
     }
@@ -426,22 +436,71 @@ class _SelectStageState extends State<SelectStage> {
         Duration.zero,
         () => {if (_loading) loadingDialog()});
 
+    MediaQueryData mediaQueryData = MediaQuery.of(context);
+    Size screenSize = mediaQueryData.size;
+    double levelsWidth = -100.0 +
+        ((mediaQueryData.orientation == Orientation.portrait)
+            ? screenSize.width
+            : screenSize.height);
+
     return SafeArea(
         child: Scaffold(
-      body: Container(
-          color:  Colors.black,          //Color(0xFF255958),
-          child: Column(
-            children: [
-              Padding(padding: EdgeInsets.only(bottom: 20)),
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  padding: EdgeInsets.all(20),
-                  children: this.widgetList,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('lib/images/background2.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0.0,
+            top: (_animation.value * 250) + 80,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 30.0),
+              child: DoubleCurvedContainer(
+                width: screenSize.width - 60.0,
+                height: 150.0,
+                outerColor: Colors.blue.shade700,
+                innerColor: Colors.blue,
+                child: Stack(
+                  children: <Widget>[
+                    ShineEffect(
+                      offset: const Offset(100.0, 100.0),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: ShadowedText(
+                        text: 'Word class',
+                        color: Colors.white,
+                        fontSize: 26.0,
+                        shadowOpacity: 1.0,
+                        offset: const Offset(1.0, 1.0),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          )),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: Container(
+                width: levelsWidth,
+                height: levelsWidth,
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  children: widgetList,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     ));
   }
 }
