@@ -7,10 +7,12 @@ class GameSplash extends StatefulWidget {
     Key? key,
     required this.level,
     required this.onComplete,
+    required this.audioStatus,
   }) : super(key: key);
 
   final String level;
   final VoidCallback onComplete;
+  final bool audioStatus;
 
   @override
   _GameSplashState createState() => _GameSplashState();
@@ -55,7 +57,11 @@ class _GameSplashState extends State<GameSplash>
     );
 
     // Play the intro
-    Audio.playAsset(AudioType.game_start);
+    if (widget.audioStatus) {
+      Audio.playAsset(AudioType.game_start);
+    } else {
+      null;
+    }
 
     // Launch the animation
     _controller.forward();

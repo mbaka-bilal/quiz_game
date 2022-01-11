@@ -14,7 +14,6 @@ class DatabaseAccess {
     /* constructor */
     WidgetsFlutterBinding.ensureInitialized();
     makeDatabase();
-    // print (stage1questions(dbAccess));
   }
 
   Future<void> makeDatabase() async {
@@ -25,12 +24,6 @@ class DatabaseAccess {
     db = await openDatabase(dbPath, version: 1, onCreate: (db, version) {
       createTables(db, version);
     });
-
-    // createTables(database, 1);
-    // insertQuestions(database);
-    // stage1questions(database).then((value) => print(value));
-
-    // return database;
   }
 
   Future<void> createTables(Database db, int v) async {
@@ -38,18 +31,11 @@ class DatabaseAccess {
 
     // creates the tables.
     await db.execute(
-      'CREATE TABLE users (id INTEGER PRIMARY KEY,life INTEGER)',
+      'CREATE TABLE users (id INTEGER PRIMARY KEY,life INTEGER,sound INTEGER,date TEXT)',
     );
     await db.execute(
       'CREATE TABLE stages (id INTEGER PRIMARY KEY,stagename TEXT,laststop INTEGER,locked INTEGER,done INTEGER)',
     );
-
-    // await db.execute(
-    //   'CREATE TABLE stage1 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
-    // );
-    // await db.execute(
-    //   'CREATE TABLE stage2 (id INTEGER PRIMARY KEY,question TEXT,answer TEXT,solved INTEGER)',
-    // );
 
     for (int i = 1; i <= 20; i++) {
       await db.execute(
@@ -65,14 +51,11 @@ class DatabaseAccess {
   }
 
   Future<void> insertUsers(Database db) async {
-    await db.insert("users", {"id": 0, "life": 5});
+    await db.insert("users",
+        {"id": 0, "life": 5, "sound": 0, "date": DateTime.now().toString()});
   }
 
   Future<void> insertQuestions(Database db) async {
-    // var questionsList = [stage1,stage2,stage3,stage4,stage5,stage6,stage7,stage8,stage9,
-    // stage10,stage11,stage12,
-    //   stage13,stage14,stage15,stage16,stage17,stage18,stage19,stage20];
-
     for (int i = 0; i <= 31; i++) {
       //insert stage1 questions
       // this works because stage1 is already in a map format.
@@ -119,23 +102,9 @@ class DatabaseAccess {
           id: maps[index]["id"],
           question: maps[index]["question"],
           answer: maps[index]["answer"],
-          solved: maps[index]["solved"],
           hint: maps[index]["hint"]);
     });
   }
-
-  // static Future<List<QuestionsMap>> stage2Questions() async {
-  //   /* Get the stage2 questions and put it in an array */
-  //   final List<Map<String, dynamic>> maps = await db.query("stage2");
-
-  //   return List.generate(maps.length, (index) {
-  //     return QuestionsMap(
-  //         id: maps[index]["id"],
-  //         question: maps[index]["question"],
-  //         answer: maps[index]["answer"],
-  //         solved: maps[index]["solved"]);
-  //   });
-  // }
 
   static Future<List<QuestionsMap>> getStageQuestions(int stage) async {
     final List<Map<String, dynamic>> maps = await db.query("stage$stage");
@@ -145,7 +114,6 @@ class DatabaseAccess {
           id: maps[index]["id"],
           question: maps[index]["question"],
           answer: maps[index]["answer"],
-          solved: maps[index]["solved"],
           hint: maps[index]["hint"]);
     });
   }
@@ -153,9 +121,6 @@ class DatabaseAccess {
   static Future<List<StagesMap>> theStages() async {
     /* get all the stages and their information */
     final List<Map<String, dynamic>> maps = await db.query("stages");
-
-    // print ("in the stages function the map is ${maps}");
-
     return List.generate(maps.length, (index) {
       return StagesMap(
           id: maps[index]["id"],
@@ -168,12 +133,13 @@ class DatabaseAccess {
 
   static Future<List<UsersInfoMap>> usersInfo() async {
     final List<Map<String, dynamic>> maps = await db.query("users");
-
-    // print ("in usersInfo the users info is $maps");
-
     return List.generate(maps.length, (index) {
       return UsersInfoMap(
-          id: maps[index]["id"], livesLeft: maps[index]["life"]);
+          playerName: maps[index]["sdfsdf"],
+          id: maps[index]["id"],
+          livesLeft: maps[index]["life"],
+          sound: maps[index]["sound"],
+          dateTime: maps[index]["date"]);
     });
   }
 }

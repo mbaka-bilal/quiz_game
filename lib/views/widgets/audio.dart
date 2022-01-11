@@ -9,21 +9,14 @@ class Audio {
   //
   static Future<dynamic> init() async {
     await player.loadAll([
-      // 'audio/swap.wav',
-      // 'audio/move_down.wav',
-      // 'audio/bomb.wav',
       'audio/game_start.wav',
       'audio/win.wav',
       'audio/lost.wav',
       'audio/move_down.wav',
       'audio/swap.wav'
+          'audio/click_sound.wav'
     ]);
   }
-
-  // static play() async {
-  //   AudioPlayer player = AudioPlayer();
-  //   await player.play('assets/audio/swap.wav', isLocal: true);
-  // }
 
   static playAsset(AudioType audioType) {
     player.play('audio/${describeEnum(audioType)}.wav');
@@ -38,5 +31,6 @@ enum AudioType {
   win,
   lost,
   move_down,
-  swap
+  swap,
+  click_sound
 }
