@@ -4,6 +4,14 @@ A game to answer questions, you can edit controllers/ad_helper.dart to edit the 
 
 You can also edit the questions, hints and answers in models/questions.dart and models/stages.dart to edit the questions and how many stages you want in the game.
 
+Music: The Cutest Bunny by Shane Ivers - https://www.silvermansound.com
+Licensed under Creative Commons Attribution 4.0 International License
+https://creativecommons.org/licenses/by/4.0/
+Music promoted by https://www.chosic.com/free-music/all/
+
+Most of the UI and some music gotten from: https://github.com/boeledi/flutter_crush
+A link explaining the github link above can be found in: https://medium.com/flutter-community/flutter-crush-debee5f389c3
+
 ![Screenshot_20220116-124045](https://user-images.githubusercontent.com/68550309/149658427-8c0a9210-754f-4cc8-a1e9-7cf7f01892c2.png)
 ![Screenshot_20220116-124100](https://user-images.githubusercontent.com/68550309/149658430-d26e32e6-cc82-41b9-b08b-fa0ae49b6ddc.png)
 ![Screenshot_20220116-124106](https://user-images.githubusercontent.com/68550309/149658431-aad919cb-3d74-41fb-a910-7cc5b6046add.png)
