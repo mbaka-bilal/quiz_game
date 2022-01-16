@@ -1,17 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:quiz_game/controllers/stages_map.dart';
-import 'package:quiz_game/helpers/connect_to_database.dart';
-import 'package:quiz_game/helpers/create_database.dart';
-import 'package:quiz_game/helpers/player_manager.dart';
-import 'package:quiz_game/helpers/retrieve_from_database.dart';
-import 'package:quiz_game/views/select_stage.dart';
-import 'package:quiz_game/views/widgets/doublecurvedcontainer.dart';
-import 'package:quiz_game/views/widgets/gamelevelbutton.dart';
-import 'package:quiz_game/views/widgets/shadowedtext.dart';
-import 'package:quiz_game/views/widgets/shineeffect.dart';
 import 'package:sqflite/sqflite.dart';
+
+import '../controllers/stages_map.dart';
+import '../helpers/connect_to_database.dart';
+import '../helpers/create_database.dart';
+import '../helpers/player_manager.dart';
+import '../helpers/retrieve_from_database.dart';
+import '../views/select_stage.dart';
+import '../views/widgets/doublecurvedcontainer.dart';
+import '../views/widgets/gamelevelbutton.dart';
+import '../views/widgets/shadowedtext.dart';
+import '../views/widgets/shineeffect.dart';
 
 class SelectUser extends StatefulWidget {
   @override
@@ -86,7 +87,7 @@ class _SelectUserState extends State<SelectUser>
                 MaterialPageRoute(
                     builder: (ctx) => SelectStage(
                           stagesInfo: _stagesInformation,
-                      playerInfo: element,
+                          playerInfo: element,
                         )));
           }));
     });

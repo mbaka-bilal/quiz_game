@@ -1,8 +1,8 @@
-import 'package:quiz_game/controllers/questions_map.dart';
-import 'package:quiz_game/controllers/usersinfo_map.dart';
-
-import '../controllers/stages_map.dart';
 import 'package:sqflite/sqflite.dart';
+
+import '../controllers/questions_map.dart';
+import '../controllers/usersinfo_map.dart';
+import '../controllers/stages_map.dart';
 
 class RetrieveTablesInformation {
   Future<List<StagesMap>> playerStagesInfo(Database db) async {

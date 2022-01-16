@@ -1,11 +1,12 @@
 import 'package:path/path.dart';
-import 'package:quiz_game/controllers/questions_map.dart';
-import 'package:quiz_game/controllers/stages_map.dart';
-import 'package:quiz_game/controllers/usersinfo_map.dart';
-import 'package:quiz_game/models/questions.dart';
-import 'package:quiz_game/models/stages.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter/widgets.dart';
+
+import '../controllers/questions_map.dart';
+import '../controllers/stages_map.dart';
+import '../controllers/usersinfo_map.dart';
+import '../models/questions.dart';
+import '../models/stages.dart';
 
 class DatabaseAccess {
   static late Database db;

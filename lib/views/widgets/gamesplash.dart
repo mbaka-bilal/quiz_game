@@ -58,7 +58,7 @@ class _GameSplashState extends State<GameSplash>
 
     // Play the intro
     if (widget.audioStatus) {
-      Audio.playAsset(AudioType.game_start);
+      // Audio.playAsset(AudioType.game_start); //play the audio
     } else {
       null;
     }

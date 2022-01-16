@@ -3,20 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:quiz_game/controllers/db.dart';
-import 'package:quiz_game/controllers/questions_map.dart';
-import 'package:quiz_game/controllers/stages_map.dart';
-import 'package:quiz_game/controllers/useful_functions.dart';
-import 'package:quiz_game/controllers/usersinfo_map.dart';
-import 'package:quiz_game/helpers/connect_to_database.dart';
-import 'package:quiz_game/helpers/retrieve_from_database.dart';
-import 'package:quiz_game/views/home.dart';
-import 'package:quiz_game/views/select_user.dart';
-import 'package:quiz_game/views/widgets/doublecurvedcontainer.dart';
-import 'package:quiz_game/views/widgets/gamelevelbutton.dart';
-import 'package:quiz_game/views/widgets/shadowedtext.dart';
-import 'package:quiz_game/views/widgets/shineeffect.dart';
 import 'package:sqflite/sqflite.dart';
+
+import '../controllers/db.dart';
+import '../controllers/questions_map.dart';
+import '../controllers/stages_map.dart';
+import '../controllers/useful_functions.dart';
+import '../controllers/usersinfo_map.dart';
+import '../helpers/connect_to_database.dart';
+import '../helpers/retrieve_from_database.dart';
+import '../views/home.dart';
+import '../views/select_user.dart';
+import '../views/widgets/doublecurvedcontainer.dart';
+import '../views/widgets/gamelevelbutton.dart';
+import '../views/widgets/shadowedtext.dart';
+import '../views/widgets/shineeffect.dart';
 
 class SelectStage extends StatefulWidget {
   final List<StagesMap> stagesInfo;
@@ -86,9 +87,9 @@ class _SelectStageState extends State<SelectStage>
 
     List<StagesMap> _playerStagesInfo = [];
 
-    var _dbInstance = await ConnectToDatabase(
-        databaseName: widget.playerInfo.playerName)
-        .connect();
+    var _dbInstance =
+        await ConnectToDatabase(databaseName: widget.playerInfo.playerName)
+            .connect();
     var _retrieveInfoDb = RetrieveTablesInformation();
 
     _playerStagesInfo = await _retrieveInfoDb.playerStagesInfo(_dbInstance);
@@ -254,9 +255,9 @@ class _SelectStageState extends State<SelectStage>
                   // if user has solved the last question take the user back to question 1
                   // else let the user solve the last question
                   usersIndex:
-                  (stagesInformation[i].lastStop == questions.length - 1)
-                      ? 0
-                      : stagesInformation[i].lastStop)));
+                      (stagesInformation[i].lastStop == questions.length - 1)
+                          ? 0
+                          : stagesInformation[i].lastStop)));
             } else {
               scaffoldMessengerKey.currentState!.showSnackBar(SnackBar(
                 content: Text("Clear Stage ${i} to unlock"),
@@ -288,7 +289,7 @@ class _SelectStageState extends State<SelectStage>
             //   }
             // }
           }
-          },
+        },
         text: "Stage ${i + 1}",
         icon: (stagesInformation[i].locked == 0)
             ? Icon(
@@ -367,21 +368,20 @@ class _SelectStageState extends State<SelectStage>
                                 )),
                             Padding(
                               padding:
-                              const EdgeInsets.symmetric(horizontal: 10),
+                                  const EdgeInsets.symmetric(horizontal: 10),
                               child: Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   ElevatedButton(
                                     style: ButtonStyle(
                                         backgroundColor:
-                                        MaterialStateProperty.all(
-                                            Colors.green)),
+                                            MaterialStateProperty.all(
+                                                Colors.green)),
                                     onPressed: () {
-
                                       Navigator.of(context).pushAndRemoveUntil(
                                           createRoute(SelectUser()),
-                                              (Route<dynamic> route) => false);
+                                          (Route<dynamic> route) => false);
                                     },
                                     child: Text(
                                       "Yes",
@@ -394,8 +394,8 @@ class _SelectStageState extends State<SelectStage>
                                   ElevatedButton(
                                       style: ButtonStyle(
                                           backgroundColor:
-                                          MaterialStateProperty.all(
-                                              Colors.red)),
+                                              MaterialStateProperty.all(
+                                                  Colors.red)),
                                       onPressed: () {
                                         //The user chooses not to quit the game
                                         Navigator.of(context).pop();

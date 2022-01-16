@@ -1,5 +1,6 @@
-import 'package:quiz_game/models/stages.dart';
 import 'package:sqflite/sqflite.dart';
+
+import '../models/stages.dart';
 
 class CreateUserDatabase {
   /* Create a database containing stages information for each of the players */

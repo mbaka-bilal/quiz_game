@@ -1,24 +1,26 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:quiz_game/controllers/ad_helper.dart';
-import 'package:quiz_game/controllers/db.dart';
-import 'package:quiz_game/controllers/questions_map.dart';
-import 'package:quiz_game/controllers/stages_map.dart';
-import 'package:quiz_game/controllers/useful_functions.dart';
-import 'package:quiz_game/controllers/usersinfo_map.dart';
-import 'package:quiz_game/helpers/connect_to_database.dart';
-import 'package:quiz_game/helpers/retrieve_from_database.dart';
-import 'package:quiz_game/helpers/update_table.dart';
-import 'package:quiz_game/views/select_stage.dart';
-import 'package:quiz_game/views/widgets/audio.dart';
-import 'dart:math';
-import 'package:quiz_game/views/widgets/gamesplash.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:math';
+
+import '../controllers/ad_helper.dart';
+import '../controllers/db.dart';
+import '../controllers/questions_map.dart';
+import '../controllers/stages_map.dart';
+import '../controllers/useful_functions.dart';
+import '../controllers/usersinfo_map.dart';
+import '../helpers/connect_to_database.dart';
+import '../helpers/retrieve_from_database.dart';
+import '../helpers/update_table.dart';
+import '../views/select_stage.dart';
+import '../views/widgets/audio.dart';
+import '../views/widgets/gamesplash.dart';
 
 class Home extends StatefulWidget {
   final List<QuestionsMap> questions;
@@ -46,13 +48,11 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   int currentQuestionIndex = 0;
   List<String> answerArray = [];
   List<String> answerArrayCopy = [];
   List<String> withHintAnswer = [];
-
-  // List<List<String>> guessesArray = [];
   List<bool> buttonStates = [];
   List<String> alphabets = [
     "A",
@@ -106,12 +106,8 @@ class _HomeState extends State<Home> {
   bool undo = false;
   bool isWumupsCryButtonPressed = false;
   bool isWumupsCryButtonActive = false;
-
-  // bool _isHearIconPressed = false;
   int indexOfLivesPressed = 0;
   List<Widget> livesList = [];
-
-  // GlobalKey _key = GlobalKey();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int currentIndex = 0; //keep track of occupied answer box
   int currentHintIndex = 0;
@@ -124,15 +120,9 @@ class _HomeState extends State<Home> {
   List<int> noHintLocations = []; // all the locations without hint in the array
   bool isTryAgain = false;
   bool isLifeFinishedDialogActive = false;
-
-  // int _counter = 0;
   StreamController<List<int>>? _events;
   int minutes = 0;
-
-  // bool _isLoadingRewardAd = false;
   bool isLifeFinishedButton = false;
-
-  // bool _isNewGame = true;
   bool _isSoundOn = true;
   List<StagesMap> playerStagesInfo = [];
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -142,14 +132,12 @@ class _HomeState extends State<Home> {
   Future<List<Widget>>? createOptionsFuture;
   List<Widget> _answerOptionsWidgets = [];
   List<String> answerList = [];
+  AudioPlayer cutestBunnySound = AudioPlayer();
+  late AppLifecycleState _notification;
 
   Future<InitializationStatus> _initGoogleMobileAds() {
     return MobileAds.instance.initialize();
   }
-
-  // void optionsFuture() {
-  //   createOptionsFuture = Future.delayed(Duration.zero, () => createOptions());
-  // }
 
   void getPlayerStagesInfo() async {
     /* get the players stages info */
@@ -166,7 +154,6 @@ class _HomeState extends State<Home> {
     DateTime lastDate;
     int minutesDifference;
 
-    // if (_isNewGame) {
     //get the last date
     currentLivesLeft = widget.numOfLivesLeft;
     var _dbInstance =
@@ -179,25 +166,10 @@ class _HomeState extends State<Home> {
 
     minutesDifference = (DateTime.now().difference(lastDate).inMinutes).abs();
 
-    // print ("////////////// The last date is ////////////// $lastDate");
-    //
-    // print ("//////////////// The current date time is //////////// ${DateTime.now().toString()}");
-
-    // print(
-    //     "/////////////THe minutes difference is ///////////// $minutesDifference");
-
     while (currentLivesLeft < 5 && (minutesDifference >= 10)) {
-      // print("I am in the while loop ////////////// $minutesDifference");
       updatePlayerLifeStatus(true);
-      // currentLivesLeft++;
       minutesDifference = (minutesDifference ~/ 10);
     }
-
-    // print("THe current lives is //////////////// $currentLivesLeft");
-    // }
-
-    // _isNewGame = false;
-    // setState(() {});
   }
 
   void updateStageInfomation(String dbName) async {
@@ -208,7 +180,6 @@ class _HomeState extends State<Home> {
     /* done getting the selected player stages inforamation */
 
     /* update the last stop for the user in any given stage */
-    // print("The current question index is $currentQuestionIndex");
     UpdateTableInformation updateTableInfoObj = UpdateTableInformation();
     updateTableInfoObj.updateTable("stagesInformation",
         {"laststop": currentQuestionIndex}, (widget.stageNumber - 1),
@@ -216,13 +187,12 @@ class _HomeState extends State<Home> {
     /* done updating the players last stop */
   }
 
-  void updateClearedStageInformation(String dbName,int stageNumber) async {
+  void updateClearedStageInformation(String dbName, int stageNumber) async {
     /* change the state of a stage to cleared */
     var _dbInstance = await ConnectToDatabase(databaseName: dbName).connect();
-    // var _retrieveInfoDb = RetrieveTablesInformation();
     UpdateTableInformation updateTableInfoObj = UpdateTableInformation();
-    updateTableInfoObj.updateTable("stagesInformation",
-        {"locked": 0}, stageNumber - 1,
+    updateTableInfoObj.updateTable(
+        "stagesInformation", {"locked": 0}, stageNumber - 1,
         db: _dbInstance);
   }
 
@@ -262,18 +232,18 @@ class _HomeState extends State<Home> {
     if (currentLivesLeft < 4) {
       _playerLife = currentLivesLeft + 2;
       currentLivesLeft = currentLivesLeft + 2;
-    } else if (currentLivesLeft == 4){
+    } else if (currentLivesLeft == 4) {
       _playerLife = currentLivesLeft + 1;
       currentLivesLeft = currentLivesLeft + 1;
-    }else{
-      null;
+    } else {
+      _playerLife = 5;
     }
 
     var _dbInstance =
-    await ConnectToDatabase(databaseName: "playersDB").connect();
+        await ConnectToDatabase(databaseName: "playersDB").connect();
     UpdateTableInformation _updateTableInfoDb = UpdateTableInformation();
-    _updateTableInfoDb.updateTable("players",
-        {"life": _playerLife }, widget.userId,
+    _updateTableInfoDb.updateTable(
+        "players", {"life": _playerLife}, widget.userId,
         db: _dbInstance);
   }
 
@@ -294,7 +264,6 @@ class _HomeState extends State<Home> {
           return ScaffoldMessenger(
             key: popUpScaffoldMessengerKey,
             child: Scaffold(
-              // key: ValueKey("life_finished_dialog"),
               backgroundColor: Colors.transparent,
               body: AlertDialog(
                 backgroundColor: Color(0xFF255958),
@@ -312,8 +281,6 @@ class _HomeState extends State<Home> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Padding(padding: EdgeInsets.only(right: 10)),
-                                // Text(
-                                //     "Get a life in ${snapshot.data![0].toString()} mins : ${snapshot.data![1].toString()} secs"),
                                 Text("You get a life in 30 Minutes")
                               ],
                             ),
@@ -341,9 +308,6 @@ class _HomeState extends State<Home> {
                                           },
                                     child: Stack(children: [
                                       Text("Get A life"),
-                                      // ButtonWithCircularProgressIndicator(
-                                      //     key: UniqueKey(),
-                                      //     show: isWumupsCryButtonPressed)
                                       (snapshot.data![0] == 0)
                                           ? Align(
                                               alignment: Alignment.centerRight,
@@ -367,6 +331,8 @@ class _HomeState extends State<Home> {
                                       _events!.close();
                                       updateStageInfomation(
                                           widget.playerInformation.playerName);
+                                      Audio.stopAsset(
+                                          cutestBunnySound); //stop all music
                                       Navigator.pushAndRemoveUntil(
                                           context,
                                           createRoute(SelectStage(
@@ -389,6 +355,7 @@ class _HomeState extends State<Home> {
         }).then((value) {
       if (currentLivesLeft == 0) {
         updateStageInfomation(widget.playerInformation.playerName);
+        Audio.stopAsset(cutestBunnySound); //stop all music
         Navigator.of(context).pushAndRemoveUntil(
             createRoute(SelectStage(
               stagesInfo: playerStagesInfo,
@@ -404,7 +371,6 @@ class _HomeState extends State<Home> {
 
   void checkAnswer() {
     if (showHint) {
-      // print("i am in show hint /////////////");
       // if the user want to see a hint
       if (currentIndex == noHintLocations.length) {
         // if the hint index equals the non Arrayed part
@@ -425,12 +391,6 @@ class _HomeState extends State<Home> {
                   } else {
                     null;
                   }
-
-                  // DatabaseAccess.updateTable(
-                  //     // change the state of the current question to answered
-                  //     "stage${widget.stageNumber}",
-                  //     {"solved": 0},
-                  //     widget.questions[currentQuestionIndex].id);
 
                   //save the progress of the player
                   updateStageInfomation(widget.playerInformation.playerName);
@@ -460,12 +420,8 @@ class _HomeState extends State<Home> {
             null;
           }
 
-          // DatabaseAccess.updateTable(
-          //     "users", {"life": (currentLivesLeft - 1)}, widget.userId);
-
           //user failed the question
           updatePlayerLifeStatus(false); //decrement the life in the database
-          // currentLivesLeft--;
 
           // if lives left is 0, show the alertdialog without the option to tryagain
           // else show the alert dialog with option to try again
@@ -489,10 +445,6 @@ class _HomeState extends State<Home> {
         }
       }
     } else {
-      // print("The current index is $currentIndex");
-      // print(
-      //     "The current length of the question is ${widget.questions[currentQuestionIndex].answer.length}");
-
       if (currentIndex ==
           widget.questions[currentQuestionIndex].answer.length) {
         if (playerAnswer == widget.questions[currentQuestionIndex].answer) {
@@ -510,11 +462,6 @@ class _HomeState extends State<Home> {
                   } else {
                     null;
                   }
-                  // DatabaseAccess.updateTable(
-                  //     // change the state of the current question to answered
-                  //     "stage${widget.stageNumber}",
-                  //     {"solved": 0},
-                  //     widget.questions[currentQuestionIndex].id);
 
                   //save the progress of the player
                   updateStageInfomation(widget.playerInformation.playerName);
@@ -544,21 +491,13 @@ class _HomeState extends State<Home> {
             null;
           }
 
-          // DatabaseAccess.updateTable(
-          //     "users", {"life": (currentLivesLeft - 1)}, widget.userId);
-
           //user failed the question
           updatePlayerLifeStatus(
               false); //decrement the life in the database and in the current game
           showHint = false;
-          // currentLivesLeft--;
-          // setState(() {});
 
           // if lives left is 0, show the alertdialog without the option to tryagain
           // else show the alert dialog with option to try again
-
-          print(
-              "THe lives left is  after failing a question is ------------------------------ $currentLivesLeft");
 
           (currentLivesLeft == 0)
               ? setState(() {})
@@ -586,7 +525,6 @@ class _HomeState extends State<Home> {
     hintLocations = [];
     String hintText = widget.questions[currentQuestionIndex].hint;
     showHint = true;
-    // currentHintIndex = 0;
     currentIndex = 0;
 
     noHintLocations = [];
@@ -633,8 +571,16 @@ class _HomeState extends State<Home> {
   }
 
   void shuffleAnswer(int index) {
-    answerList = widget.questions[index].answer.split("");
-    answerList.shuffle(); //shuffle the options
+    answerList = [];
+    if (widget.questions[index].answer.length < 9) {
+      for (int i = 0; i < 2; i++) {
+        answerList.add(alphabets[rng.nextInt(alphabets.length - 1)]);
+      }
+      answerList.addAll(widget.questions[index].answer.split(""));
+    } else {
+      answerList = widget.questions[index].answer.split("");
+      answerList.shuffle(); //shuffle the options
+    }
   }
 
   List<Widget> createOptions() {
@@ -708,7 +654,6 @@ class _HomeState extends State<Home> {
                 playerAnswer = playerAnswer + answerList[index];
                 currentIndex++;
                 setState(() {});
-                // print("THe state of button state is ${buttonStates[index]}");
                 checkAnswer();
               }
             },
@@ -846,6 +791,8 @@ class _HomeState extends State<Home> {
                               onPressed: () {
                                 updateStageInfomation(
                                     widget.playerInformation.playerName);
+                                Audio.stopAsset(
+                                    cutestBunnySound); //stop all music
                                 Navigator.of(context)
                                     .pushReplacement(createRoute(SelectStage(
                                   stagesInfo: playerStagesInfo,
@@ -963,8 +910,12 @@ class _HomeState extends State<Home> {
                           stageClearedLifeUpdate();
 
                           updateClearedStageInformation(
-                              widget.playerInformation.playerName,widget.stageNumber);
-                          updateClearedStageInformation(widget.playerInformation.playerName, widget.stageNumber + 1);
+                              widget.playerInformation.playerName,
+                              widget.stageNumber);
+                          updateClearedStageInformation(
+                              widget.playerInformation.playerName,
+                              widget.stageNumber + 1);
+                          Audio.stopAsset(cutestBunnySound); //stop all music
                           Navigator.of(context)
                               .pushReplacement(createRoute(SelectStage(
                             stagesInfo: playerStagesInfo,
@@ -1050,6 +1001,8 @@ class _HomeState extends State<Home> {
     a = []; //empty the array that displays the pressed buttons
     solution = []; //empty the solutions array
     hintArray = []; //reset the hints array
+
+    answerList.shuffle(); //shuffle the options
 
     undoPressed = false;
     currentIndex = 0;
@@ -1189,8 +1142,8 @@ class _HomeState extends State<Home> {
           _rewardedAd = ad;
           _isRewardedAdReady = true;
           // setState(() {});
-
           showDialog(
+              barrierDismissible: false,
               context: context,
               builder: (context) {
                 return AlertDialog(
@@ -1265,13 +1218,26 @@ class _HomeState extends State<Home> {
                                   onAdShowedFullScreenContent: (ad) {
                             _isRewardedAdReady =
                                 false; // so we can get a new Ad
+                            // if (_isSoundOn) {
+                            //   Audio.stopAsset(cutestBunnySound);
+                            // }
                             if (_timer != null) {
                               _timer!.cancel();
                             }
                             setState(() {});
-                          }, onAdDismissedFullScreenContent: (ad) {
+                          }, onAdDismissedFullScreenContent: (ad) async {
                             _isRewardedAdReady = false;
                             _isGetLives = false;
+
+                            // if (_isSoundOn) {
+                            //   Audio.init();
+                            //   cutestBunnySound = await Audio.playAsset(
+                            //       AudioType.the_cutest_bunny); //play the sound
+                            // }
+
+                            // if (_isSoundOn) {
+                            //   Audio.stopAsset(cutestBunnySound);
+                            // }
 
                             if (_timer != null) {
                               _timer!.cancel();
@@ -1301,7 +1267,14 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                 );
-              });
+              }).then((value) {
+            _hintPressed = false;
+            _isRewardedAdReady = false;
+            _isGetLives = false;
+            isWumupsCryButtonPressed = false;
+            isWumupsCryButtonActive = false;
+            setState(() {});
+          });
         },
         onAdFailedToLoad: (err) {
           if (_rewardedAd != null) {
@@ -1344,10 +1317,42 @@ class _HomeState extends State<Home> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // TODO: implement didChangeAppLifecycleState
+
+    _notification = state;
+
+    print("the notification is ------------------ $_notification");
+    if (_notification == AppLifecycleState.paused) {
+      if (_isSoundOn) {
+        cutestBunnySound.pause();
+      }
+    }
+    if (_notification == AppLifecycleState.resumed) {
+      if (_isSoundOn) {
+        print("resumed ---------------------");
+        cutestBunnySound.resume();
+      } else {
+        return;
+        print("sound is off------------");
+      }
+    }
+
+    if (_notification == AppLifecycleState.inactive) {
+      if (_isSoundOn) {
+        print("It has been detached-----------");
+        cutestBunnySound.stop();
+      }
+    }
+    super.didChangeAppLifecycleState(state);
+  }
+
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance!.addPostFrameCallback(_showGameStartSplash);
+    WidgetsBinding.instance!.addObserver(this);
     print("THe user life left is ${widget.numOfLivesLeft}");
     // optionsFuture(); //create the future for the FutureBulilder widget, so it will not rebuild
     shuffleAnswer(widget.usersIndex); //shuffle the answer
@@ -1380,14 +1385,22 @@ class _HomeState extends State<Home> {
 
     if (widget.soundState == 1) {
       _isSoundOn = false;
+      Audio.stopAsset(cutestBunnySound);
     } else {
       _isSoundOn = true;
+      Audio.init();
+      initializeBackgroundMusic();
     }
+  }
+
+  Future<void> initializeBackgroundMusic() async {
+    cutestBunnySound = await Audio.playAsset(AudioType.the_cutest_bunny);
   }
 
   @override
   void dispose() {
     super.dispose();
+    WidgetsBinding.instance!.removeObserver(this);
     bannerTimer.cancel();
     if (_timer != null) {
       _timer!.cancel();
@@ -1395,6 +1408,8 @@ class _HomeState extends State<Home> {
     if (_isRewardedAdReady) {
       _rewardedAd!.dispose();
     }
+
+    Audio.stopAsset(cutestBunnySound); //stop all music
   }
 
   @override
@@ -1501,6 +1516,8 @@ class _HomeState extends State<Home> {
                                       //the user chooses to quit the game, take the user back to the select stage page
                                       updateStageInfomation(
                                           widget.playerInformation.playerName);
+                                      Audio.stopAsset(
+                                          cutestBunnySound); //stop all music
                                       Navigator.of(context).pushAndRemoveUntil(
                                           createRoute(SelectStage(
                                             stagesInfo: playerStagesInfo,
@@ -1693,6 +1710,7 @@ class _HomeState extends State<Home> {
                                                                                 await _retrieveInfoDb.playerStagesInfo(_dbInstance);
 
                                                                             updateStageInfomation(widget.playerInformation.playerName);
+                                                                            Audio.stopAsset(cutestBunnySound); //stop all music
                                                                             Navigator.of(context).pushReplacement(createRoute(SelectStage(
                                                                               stagesInfo: playerStagesInfo,
                                                                               playerInfo: widget.playerInformation,
@@ -1772,10 +1790,16 @@ class _HomeState extends State<Home> {
                                     updatePlayerSoundStatus(
                                         widget.playerInformation.playerName, 1);
                                     _isSoundOn = false;
+
+                                    Audio.stopAsset(cutestBunnySound);
                                   } else {
                                     updatePlayerSoundStatus(
                                         widget.playerInformation.playerName, 0);
                                     _isSoundOn = true;
+                                    Audio.init();
+                                    cutestBunnySound = await Audio.playAsset(
+                                        AudioType
+                                            .the_cutest_bunny); //play the sound
                                   }
                                   setState(() {});
                                 },
@@ -1805,12 +1829,25 @@ class _HomeState extends State<Home> {
                             child: Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: Container(
+                                  height: 70,
                                   width: 50,
-                                  height: 50,
                                   child: Stack(
                                     children: [
-                                      Image.asset(
-                                          "lib/images/bulb_light_bulb.gif"),
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        child: Image.asset(
+                                            "lib/images/bulb_light_bulb.gif"),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.bottomCenter,
+                                        child: Text("HINT",
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF228B22),
+                                            )),
+                                      ),
                                       if (this._hintPressed)
                                         CircularProgressIndicator()
                                     ],
@@ -1966,56 +2003,50 @@ class _HomeState extends State<Home> {
                                                                             8.0),
                                                                 child: Text.rich(
                                                                     TextSpan(
-                                                                  text:
-                                                                      "",
-                                                                      style:
+                                                                  text: "",
+                                                                  style:
                                                                       TextStyle(
-                                                                        color: Colors
-                                                                            .white30,
-                                                                        fontFamily:
+                                                                    color: Colors
+                                                                        .white30,
+                                                                    fontFamily:
                                                                         "RoadRage",
-                                                                        fontSize:
+                                                                    fontSize:
                                                                         30,
-                                                                        fontWeight:
-                                                                        FontWeight.bold,
-                                                                      ),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                  ),
                                                                   children: [
-                                                                      TextSpan(
-                                                                      text:
-                                                                      "What is world class \n",
-
-                                                                        style:
-                                                                      TextStyle(
-
-                                                                        color: Colors
-                                                                            .white,
-                                                                        fontSize:
-                                                                        25,
-                                                                        decoration:
-                                                                        TextDecoration
-                                                                            .underline,
-                                                                      ),),
                                                                     TextSpan(
                                                                       text:
-                                                                          "Word class is a puzzle of root words and players are expected to" +
-                                                                              " find the root word from which the given word is formed. Every English word is gotten from a Greek" +
-                                                                              " or Latin word that can either stand alone on its own or with the support of other letter \n\n\n"),
-
-                                                                    TextSpan(
-                                                                      text:
-                                                                      "How to play \n",
-
+                                                                          "What is world class \n",
                                                                       style:
-                                                                      TextStyle(
-
+                                                                          TextStyle(
                                                                         color: Colors
                                                                             .white,
                                                                         fontSize:
-                                                                        25,
+                                                                            25,
                                                                         decoration:
-                                                                        TextDecoration
-                                                                            .underline,
-                                                                      ),),
+                                                                            TextDecoration.underline,
+                                                                      ),
+                                                                    ),
+                                                                    TextSpan(
+                                                                        text: "Word class is a puzzle of root words and players are expected to" +
+                                                                            " find the root word from which the given word is formed. Every English word is gotten from a Greek" +
+                                                                            " or Latin word that can either stand alone on its own or with the support of other letter \n\n\n"),
+                                                                    TextSpan(
+                                                                      text:
+                                                                          "How to play \n",
+                                                                      style:
+                                                                          TextStyle(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontSize:
+                                                                            25,
+                                                                        decoration:
+                                                                            TextDecoration.underline,
+                                                                      ),
+                                                                    ),
                                                                     TextSpan(
                                                                       text: " 1. Tap the correct letters to spell out the correct answer \n" +
                                                                           " 2. Tap the undo button (bottom right) to undo your last tap \n" +

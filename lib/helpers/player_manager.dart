@@ -9,7 +9,6 @@ class PlayerManager {
     var _tableInDatabase = await db
         .query('sqlite_master', where: 'name = ?', whereArgs: ['players']);
     if (_tableInDatabase.isEmpty) {
-      print("in here buddy");
       await db.execute(
         'CREATE TABLE players (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,name TEXT,life INTEGER,sound INTEGER,date TEXT)',
       );
