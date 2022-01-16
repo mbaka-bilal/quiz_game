@@ -8,10 +8,8 @@ class Audio {
 
   static Future<dynamic> init() async {
     await player.loadAll([
-      'audio/game_start.wav',
       'audio/win.wav',
       'audio/lost.wav',
-      'audio/move_down.wav',
       'audio/swap.wav',
       'audio/click_sound.wav',
       'audio/the_cutest_bunny.wav'
@@ -21,7 +19,6 @@ class Audio {
   static playAsset(AudioType audioType) async {
     if (audioType == AudioType.the_cutest_bunny) {
       return await player.loop('audio/${describeEnum(audioType)}.wav');
-      // player.onAudioPositionChanged
     } else {
       return await player.play('audio/${describeEnum(audioType)}.wav');
     }
@@ -35,10 +32,8 @@ class Audio {
 }
 
 enum AudioType {
-  game_start,
   win,
   lost,
-  move_down,
   swap,
   click_sound,
   the_cutest_bunny,
